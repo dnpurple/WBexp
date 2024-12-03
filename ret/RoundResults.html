@@ -1,0 +1,47 @@
+{% extends "global/Page.html" %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <h1 style="font-weight: bold; font-size: 20px;"><strong>Your role is: {{ player.get_role }}</strong></h1>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h2 style="font-weight: bold; font-size: 20px;">Round Results</h2>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+
+    </div>
+</div>
+
+<div style="text-align: center;">
+    <p>If the computer selects this round for payment, you will receive:</strong></p>
+    <p> <strong>{{ player.points_earned }} ECUs</strong> for the Addition Task,</p>
+    <p> <strong>{{ player.belief_earnings }} ECUs</strong> for the Prediction Task,</p>
+    <p><strong>{{ total_earnings }}</strong> ECUs in total.</p>
+</div>
+
+<!-- Styling to adjust the appearance of the oTree timer -->
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+{% endblock %}

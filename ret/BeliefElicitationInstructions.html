@@ -1,0 +1,61 @@
+{{ extends 'global/Page.html' }}
+
+
+{{ block content }}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px;">Prediction Task Instructions</h1>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+        <p style="font-weight: normal; color: black; font-size: 14px;">
+            Time left: <span id="countdown-timer" style="color: red;">{{ timeout_seconds }}</span> seconds
+        </p>
+    </div>
+</div>
+<br>
+
+<ul>
+    <li>You will be given a chance to earn additional ECUs
+    by guessing your group members' decisions in this round.</li>
+
+    <li>The more accurate your prediction, the more ECUS you will earn.</li>
+
+    <li>If your prediction is over 90% accurate, you will earn an additional 1001 ECUs.</li>
+
+    <li>If your prediction is accurate by less than 90% but more than
+        80%, you will earn an additional 40 ECUs.</li>
+
+    <li>If your prediction was less than 80% accurate, you will earn 0 ECUs
+    from this task.</li>
+</ul>
+
+<!-- Styling to adjust the appearance of the oTree timer -->
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+
+{{ endblock }}

@@ -1,0 +1,40 @@
+{{ extends 'global/Page.html' }}
+
+
+{{ block content }}
+
+
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 24px;">Part A earnings</h1>
+    </div>
+
+
+<br>
+
+
+    <div style="text-align: center;">
+ <h5>   You solved {{ player.num_solved }} problems correctly and earned {{ participant.payoff_baseline }} ECUs in Part A.</h5>
+    </div>
+
+
+
+
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+
+{{ endblock }}

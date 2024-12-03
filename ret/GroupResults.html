@@ -1,0 +1,75 @@
+{% extends "global/Page.html" %}
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <h1 style="font-weight: bold; font-size: 20px;"><strong>Your role is: {{ player.get_role }}</strong></h1>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h2 style="font-weight: bold; font-size: 20px;">Addition Results</h2>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+
+    </div>
+</div>
+
+<div style="text-align: center;">
+<p>You solved <strong>{{ player.num_solved }}</strong> problems correctly and earned <strong>{{ player.points_earned }} ECUs</strong>.</p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timerDuration = {{ timeout_seconds }};  // Timeout value passed from backend
+        const startTimeKey = 'groupResultsPageStartTime';
+
+        let startTime = localStorage.getItem(startTimeKey);
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem(startTimeKey, startTime);
+        }
+
+        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
+
+        const timerDisplay = document.getElementById("countdown-timer");
+        timerDisplay.textContent = timeLeft;
+
+        const countdownInterval = setInterval(() => {
+            timeLeft -= 1;
+            timerDisplay.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                timerDisplay.textContent = "0";
+                localStorage.removeItem(startTimeKey);
+                document.querySelector("form").submit();
+            }
+        }, 1000);
+    });
+</script>
+
+<!-- Hide default oTree timer using CSS -->
+<!-- Styling to adjust the appearance of the oTree timer -->
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,129 @@
+{{ extends 'global/Page.html' }}
+{{ block title }}Addition{{ endblock }}
+
+{{ block styles }}
+
+<style>
+         /* Container for the entire page content */
+        #content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Container for the addition task */
+        #ret-addition-container {
+            display: flex;
+            justify-content: space-around;
+            width: fit-content;
+            margin: 2rem auto;
+            align-items: center
+        }
+
+        #ret-addition-container div {
+            margin: 0 0.5rem;
+        }
+
+        #ret-addition-container .form-control {
+            max-width: 100px;
+            text-align: center;
+        }
+        /* Centering the next button at the bottom */
+        .next-btn-container {
+            margin-top: 2rem; /* Adds some space between content and button */
+            display: flex;
+            justify-content: center;
+        }
+
+</style>
+
+{{ endblock }}
+
+{{ block content }}
+
+<div id="content-container">
+    <div id="ret-addition-container">
+
+        <div id="addition">
+            {{ for addendum in addenda }}
+                <span id="addendum-{{ addendum }}"></span>
+                {{ if addendum < C.NUM_ADDENDA }} + {{ endif }}
+            {{ endfor  }}
+            =
+        </div>
+
+     
+        <div>
+            <input id="addition-answer" type="number" class="form-control" required>
+        </div>
+
+       
+        <div>
+            <button type="button" id="submit-addition" class="btn btn-outline-primary">Submit</button>
+        </div>
+
+    </div>
+
+    
+    <div class="text-center">
+        <div>
+            Number of attempts: <b id="num-attempts">{{ player.num_attempts }}</b>
+        </div>
+        <div>
+            Number of correct answers: <b id="num-solved">{{ player.num_solved }}</b>
+        </div>
+    </div>
+
+    <!-- Next button placed inside a flex container for proper alignment -->
+    <div class="next-btn-container">
+        {{ next_button }}
+    </div>
+</div>
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+ document.addEventListener('DOMContentLoaded', () => {
+           
+            const addendaSpan = document.querySelectorAll('#addition span'),
+                btnSubmitAddition = document.getElementById('submit-addition'),
+                answer = document.querySelector('#addition-answer'),
+                form = document.querySelector('#form');
+
+            const numAttempts = document.querySelector('#num-attempts'),
+                numSolved = document.querySelector('#num-solved');
+
+            liveSend({action: 'load'});
+
+            window.liveRecv = (data) => { 
+               
+                addendaSpan.forEach((s, i) => {
+                    s.innerText = data.addition[i];
+                })
+
+                
+                numAttempts.innerHTML = data.num_attempts;
+                numSolved.innerHTML = data.num_solved;
+            }
+
+            btnSubmitAddition.addEventListener('click', () => {
+                if (form.reportValidity()) {
+                    liveSend({action: 'answer', answer: answer.value});
+                    answer.value = '';
+
+                    // Remove focus from submit button once answer is submitted
+                    btnSubmitAddition.blur();
+                }
+            })
+
+        })
+
+
+
+
+
+
+
+</script>
+{{ endblock }}

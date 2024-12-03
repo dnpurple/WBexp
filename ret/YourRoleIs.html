@@ -1,0 +1,30 @@
+{% extends "global/Page.html" %}
+{% block content %}
+
+<!-- Timer, Right-Aligned and on Its Own Line -->
+
+
+<!-- Center-Aligned Role Information -->
+<p style="text-align: center;">
+    Your role is {{ player.get_role() }}.
+</p>
+
+<style>
+    .otree-timer {
+        display: block; /* Ensures the timer is on its own line */
+        text-align: right; /* Aligns text within the timer to the right */
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        color: black !important;
+        font-weight: normal;
+    }
+</style>
+
+<!-- Right-Aligned Next Button -->
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,283 @@
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px;">Prediction Task</h1>
+    </div>
+    <div style="text-align: right;">
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+    </div>
+</div>
+
+<br>
+<ul>
+    <li>We now ask you to guess what <span style="color: blue;">decisions</span> the <strong><u>manager</u></strong> made.</li>
+    <li>The manager made 2 decisions:</li>
+    <ol type="a">
+        <li>What percentage to take from the worker they were matched with</li>
+        <li>What transfer to offer to the authority</li>
+    </ol>
+</ul>
+
+<!-- Prediction Table -->
+<table>
+    <thead>
+        <tr>
+            <th>If the manager took from:</th>
+            <th>ECUs Earned</th>
+            <th>Did the manager take?</th>
+            <th>Percentage Manager Will Take</th>
+            <th>Amount Manager Will Transfer</th>
+        </tr>
+    </thead>
+    <tbody>
+
+
+            {% for worker in workers_data %}
+            <tr>
+                <td><strong> {{ worker.label }}</strong></td>
+                <td>{{ worker.earnings }} ECUs</td>
+                <td>
+                    <label><input type="radio" name="{{ worker.belief_take_field }}" value="yes" onclick="toggleSlider('{{ forloop.counter }}', true)"> Yes</label>
+                    <label><input type="radio" name="{{ worker.belief_take_field }}" value="no" onclick="toggleSlider('{{ forloop.counter }}', false)"> No</label>
+                    <!-- Display error for this field -->
+                 <div id="error_{{ worker.belief_take_field }}" style="color: red; display: none;">
+        {{ formfield_errors worker.belief_take_field }}
+    </div>
+                </td>
+                <td>
+                    <div id="slider_container_take_{{ forloop.counter }}" style="display: none;">
+                        <input type="range" id="slider_take_1" name="belief_manager_take_self" min="1" max="50" step="1" value="1" disabled
+                               oninput="markSliderInteracted('take_1{{ forloop.counter }}')">
+                        <span id="slider_value_take_{{ forloop.counter }}">1%</span>
+                    </div>
+                     <!-- Display error for this field -->
+
+                </td>
+                <td>
+                    <div id="slider_container_transfer_{{ forloop.counter }}" style="display: none;">
+                        <input type="range" id="slider_transfer_{{ forloop.counter }}" name="{{ worker.belief_transfer_field }}" min="0" max="50" step="1" value="0" disabled
+                               oninput="markSliderInteracted('transfer_{{ forloop.counter }}')">
+                        <span id="slider_value_transfer_{{ forloop.counter}}">0</span>
+                    </div>
+
+                    <div id="error_{{ worker.belief_transfer_field }}" style="color: red; display: none;">
+                    {{ formfield_errors worker.belief_transfer_field }}
+                    </div>
+                    <!-- Display error for this field -->
+
+                </td>
+            </tr>
+        {% endfor %}
+
+    </tbody>
+</table>
+
+<div style="color: red;">
+    {{ form.errors }}
+</div>
+
+
+<!-- Next Button -->
+<div style="text-align: right; margin-top: 20px;">
+    <button id="next_button" type="submit" disabled>Next</button>
+</div>
+
+<style>
+    table {
+        width: 100%; /* Increase the table width */
+        text-align: center;
+        margin: 20px ; /* Center the table horizontally */
+        border-collapse: collapse; /* Ensures unified borders */
+    }
+
+    th, td {
+        border: 1px solid #ddd; /* Lighten border color for a cleaner look */
+        padding: 8px; /* Add more padding for larger cells */
+        font-size: 16px; /* Adjust font size for better readability */
+        text-align: center; /* Center-align content */
+        vertical-align: middle; /* Vertically align content */
+        background-color: #f9f9f9; /* Light background for cells */
+    }
+
+    th {
+        font-weight: bold;
+        background-color: #f2f2f2; /* Slightly darker background for headers */
+    }
+
+    input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 80%; /* Increase slider width */
+        height: 8px; /* Adjust slider height */
+        border-radius: 5px;
+        background: #e0e0e0; /* Light gray slider track */
+        outline: none;
+        cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    input[type="range"]:hover::-webkit-slider-thumb,
+    input[type="range"]:hover::-moz-range-thumb {
+        border-color: #888; /* Slightly darker border on hover */
+    }
+</style>
+<script>
+window.toggleSlider = function(workerId, show) {
+    const takeContainer = document.getElementById(`slider_container_take_${workerId}`);
+    const transferContainer = document.getElementById(`slider_container_transfer_${workerId}`);
+    const takeSlider = document.getElementById(`slider_take_${workerId}`);
+    const transferSlider = document.getElementById(`slider_transfer_${workerId}`);
+
+    if (!takeContainer || !transferContainer) {
+        console.error(`Slider containers not found for worker ID ${workerId}`);
+        return;
+    }
+
+    if (show) {
+        takeContainer.style.display = "block";
+        transferContainer.style.display = "block";
+        takeSlider.disabled = false;
+        transferSlider.disabled = false;
+    } else {
+        takeContainer.style.display = "none";
+        transferContainer.style.display = "none";
+        takeSlider.disabled = true;
+        transferSlider.disabled = true;
+    }
+
+    console.log(`Toggle sliders for worker ${workerId} - Show: ${show}`);
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+    const nextButton = document.getElementById("next_button");
+    const radios = document.querySelectorAll('input[type="radio"]');
+    const sliders = document.querySelectorAll('input[type="range"]');
+    const workerStates = {}; // Track radio and slider interactions per worker
+
+    // Initialize states for each worker
+    radios.forEach(radio => {
+        const workerId = radio.name.split("_").pop(); // Extract worker ID from the radio name
+
+        if (!workerStates[workerId]) {
+            workerStates[workerId] = { radioSelected: false, take: false, transfer: false };
+        }
+
+        radio.addEventListener("change", function () {
+            workerStates[workerId].radioSelected = true;
+
+            if (this.value === "yes") {
+                toggleSlider(workerId, true); // Show sliders
+                workerStates[workerId].take = false; // Reset slider states
+                workerStates[workerId].transfer = false;
+            } else {
+                toggleSlider(workerId, false); // Hide sliders
+                workerStates[workerId].take = true; // Mark sliders as interacted for "No"
+                workerStates[workerId].transfer = true;
+            }
+
+            checkConditions();
+        });
+    });
+
+    sliders.forEach(slider => {
+        slider.addEventListener("input", function () {
+            const sliderType = this.id.includes("take") ? "take" : "transfer"; // Determine type
+            const workerId = this.id.split("_").pop(); // Extract worker ID
+            workerStates[workerId][sliderType] = true; // Mark this slider as interacted
+
+            updateSliderDisplay(this); // Update displayed value for the slider
+            checkConditions();
+        });
+    });
+
+    function updateSliderDisplay(slider) {
+        const displayElement = document.getElementById(slider.id.replace("slider_", "slider_value_"));
+        if (displayElement) {
+            displayElement.textContent = slider.value + (slider.id.includes("take") ? "%" : "");
+        } else {
+            console.error(`Display element not found for slider ID ${slider.id}`);
+        }
+    }
+
+    function checkConditions() {
+        // Check if all workers satisfy the condition
+        const allConditionsMet = Object.values(workerStates).every(state => {
+            if (!state.radioSelected) return false; // Radio must be selected
+            if (state.take && state.transfer) return true; // Both sliders must be interacted with for "Yes"
+            return false;
+        });
+
+        // Enable/Disable Next button
+        nextButton.disabled = !allConditionsMet;
+
+        // Debugging logs
+        console.log("Worker States:", workerStates);
+        console.log("All Conditions Met:", allConditionsMet);
+    }
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const nextButton = document.getElementById("next_button");
+
+        nextButton.addEventListener("click", function (event) {
+            let allValid = true;
+
+            // Loop through all workers to validate fields
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                const fieldName = radio.name;
+                const errorDiv = document.getElementById(`error_${fieldName}`);
+
+                // Check if the radio group is selected
+                const groupSelected = document.querySelector(`input[name="${fieldName}"]:checked`);
+                if (!groupSelected) {
+                    allValid = false;
+                    if (errorDiv) errorDiv.style.display = "block"; // Show error
+                } else {
+                    if (errorDiv) errorDiv.style.display = "none"; // Hide error
+                }
+            });
+
+            // Prevent form submission if validation fails
+            if (!allValid) {
+                event.preventDefault();
+                alert("Please complete all required fields before proceeding.");
+            }
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+

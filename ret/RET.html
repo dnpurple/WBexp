@@ -1,0 +1,117 @@
+{{ extends 'global/Page.html' }}
+
+{{ block content }}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <h1 style="font-weight: bold; font-size: 20px;"><strong>Your role is: {{ player.get_role }}</strong></h1>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h2 style="font-weight: bold; font-size: 20px;">Addition Task</h2>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+
+    </div>
+</div>
+
+<p style="text-align: center;">
+    Complete as many problems as you can in 1 minute.
+</p>
+<style>
+    #ret-addition-container {
+        display: flex;
+        justify-content: space-around;
+        width: fit-content;
+        margin: 4rem auto;
+        align-items: center;
+    }
+    #ret-addition-container div {
+        margin: 0 0.5rem;
+    }
+    #ret-addition-container .form-control {
+        max-width: 100px;
+        text-align: center;
+    }
+</style>
+
+<div id="ret-addition-container">
+    <div id="addition">
+        {{ for addendum in addenda }}
+            <span id="addendum-{{ addendum }}"></span>
+            {{ if addendum < C.NUM_ADDENDA }} + {{ endif }}
+        {{ endfor  }}
+        =
+    </div>
+    <div>
+        <input id="addition-answer" type="number" class="form-control" required autofocus>
+    </div>
+    <div>
+        <button type="button" id="submit-addition" class="btn btn-outline-primary">Submit</button>
+    </div>
+</div>
+
+<div class="text-center">
+    <div>
+        Number of attempts: <b id="num-attempts">{{ player.num_attempts }}</b>
+    </div>
+    <div>
+        Number of correct answers: <b id="num-solved">{{ player.num_solved }}</b>
+    </div>
+</div>
+
+
+
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const addendaSpan = document.querySelectorAll('#addition span'),
+              btnSubmitAddition = document.getElementById('submit-addition'),
+              answerBox = document.getElementById('addition-answer'), // updated ID
+              numAttempts = document.querySelector('#num-attempts'),
+              numSolved = document.querySelector('#num-solved');
+
+        liveSend({action: 'load'});
+
+        window.liveRecv = (data) => {
+            addendaSpan.forEach((s, i) => {
+                s.innerText = data.addition[i];
+            });
+
+            numAttempts.innerHTML = data.num_attempts;
+            numSolved.innerHTML = data.num_solved;
+        };
+
+        // Function to submit the answer
+        function submitAnswer() {
+            liveSend({action: 'answer', answer: answerBox.value});
+            answerBox.value = '';
+            answerBox.focus();
+        }
+
+        // Submit answer on button click
+        btnSubmitAddition.addEventListener('click', () => {
+            if (answerBox.reportValidity()) {
+                submitAnswer();
+            }
+        });
+
+        // Submit answer on "Enter" key press
+        answerBox.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (answerBox.reportValidity()) {
+                    submitAnswer();
+                }
+            }
+        });
+    });
+</script>
+{{ endblock }}

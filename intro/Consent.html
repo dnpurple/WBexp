@@ -1,0 +1,62 @@
+{{ extends 'global/Page.html' }}
+{{ block title }}Consent From{{ endblock }}
+
+{{ block content }}
+
+<div class="card bg-light">
+    <div class="card-body">
+        <h5>
+            <b>Information sheet</b>
+        </h5>
+
+        <p>
+            You are invited to take part in a research study being conducted by Tom
+            in conjunction with the Centre for Experimental Social Sciences.
+            In concordance with CESS policy, today's study has received approval of its ethicality
+            from CESS's independent review board.
+        </p>
+        <p>
+            We ask that you read this form carefully prior to deciding whether to participate in the study.
+            If you decide you do not want to participate, you may leave at any time without providing a reason
+            and without penalty. If you choose to leave prior to the completion of the study,
+            your data will not be stored for later use.
+        </p>
+
+        <p>
+            Please, review the following content.
+        </p>
+        <ol>
+            <li>
+                <b>Purpose:</b> The purpose of this study is to better understand how individuals make
+                decisions under various monetary incentives.
+            </li>
+            <li>
+                <b>What happens during the study:</b> The study requires you to sit in front of a computer
+                terminal and make a series of decisions that may affect your final earnings
+                and the final earnings of others.
+            </li>
+            <li>
+                Etc...
+            </li>
+        </ol>
+
+        <p>
+            <b>Concerns:</b> If you have any questions or concerns about any aspect of this project,
+            you can contact the authors of the study or CESS at
+            <a href="mailto:cess-lab@nuffield.ox.ac.uk">cess-lab@nuffield.ox.ac.uk</a>,
+            who will do their best to answer your query.
+        </p>
+    </div>
+</div>
+
+{{ formfields }}
+<p class = "text-centered">
+    <button class = "btn btn-primary">
+        CONFIRM
+    </button>
+    
+</p>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -1,0 +1,170 @@
+{% extends 'global/Page.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px;">Prediction Task</h1>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+    </div>
+</div>
+<br>
+
+   <ul>
+        <li>
+            We now ask you to guess what <span style="color: blue;">decisions</span> the
+            <strong><u>worker</u></strong> in your group made in this round.
+        </li>
+        <li>
+            The worker decided whether or not to make a report about
+            about you if you took from a worker
+        </li>
+        <li>
+            The worker faced 2 scenarios:
+            <ol type="a">
+                <li>Scenario 1: If they were your matched worker and you took from them.</li>
+                <li>Scenario 2: If you were matched with another worker and you took from that worker.</li>
+            </ol>
+        </li>
+
+        <li>
+           The worker in your group decided the minimum percentage taken
+            for which they would make a report in each scenario.
+        </li>
+
+
+    </ul>
+
+    <p class="centered-text">Please predict the worker's decision for each scenario.</p>
+
+
+<table style="width: 100%; text-align: center; margin-top: 20px;">
+    <thead>
+        <tr>
+            <th> Scenarios </th>
+            <th>The matched worker is a:</th>
+            <th>Minimum Percentage of Earnings For Which Worker Will Report</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Worker in the manager's group -->
+        <tr>
+            <td>1</td>
+            <td><strong>Worker in your group</strong></td>
+            <td>
+                <input type="range" id="report_slider_group" name="belief_report_group" min="0" max="{{ max_percentage_plus_one }}" step="1" value="0"
+                       oninput="updateSliderDisplay(this.value, 'report_display_group'); checkSlidersCompletion()">
+                <span id="report_display_group">0%</span>
+            </td>
+        </tr>
+
+        <!-- Worker in another group -->
+        <tr>
+            <td>2</td>
+            <td><strong>Worker in other group</strong></td>
+            <td>
+                <input type="range" id="report_slider_other" name="belief_report_other" min="0" max="{{ max_percentage_plus_one }}" step="1" value="0"
+                       oninput="updateSliderDisplay(this.value, 'report_display_other'); checkSlidersCompletion()">
+                <span id="report_display_other">0%</span>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Minimum Transfer Question for Authority -->
+
+
+<div style="text-align: right; margin-top: 20px;">
+    <button type="submit" id="next_button" disabled>Next</button>
+</div>
+
+<!-- JavaScript for Slider Interaction and Conditional Display -->
+<script>
+    // Track if sliders have been interacted with
+    let slidersInteracted = {
+        'report_group': false,
+        'report_other': false,
+
+    };
+
+    function updateSliderDisplay(value, displayId) {
+        document.getElementById(displayId).textContent = value == "{{ max_percentage_plus_one }}" ? 'None' : value + '%';
+    }
+
+    function checkSlidersCompletion() {
+        // Mark each slider as interacted with on change
+        slidersInteracted['report_group'] = slidersInteracted['report_group'] || document.getElementById('report_slider_group').value !== '0';
+        slidersInteracted['report_other'] = slidersInteracted['report_other'] || document.getElementById('report_slider_other').value !== '0';
+
+
+        // Check if all sliders, including authority, have been interacted with to enable the Next button
+        if (Object.values(slidersInteracted).every(value => value)) {
+            document.getElementById('next_button').disabled = false;
+        }
+    }
+
+
+</script>
+
+<!-- Styling for Table and Sliders -->
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        font-size: 16px;
+    }
+
+    th {
+        font-weight: bold;
+        background-color: #f2f2f2;
+    }
+
+    input[type="range"] {
+        -webkit-appearance: none;
+        width: 80%;
+        height: 8px;
+        border-radius: 5px;
+        background: linear-gradient(to right, #e0e0e0 0%, #e0e0e0 100%);
+        outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+</style>
+
+
+
+
+{% endblock %}

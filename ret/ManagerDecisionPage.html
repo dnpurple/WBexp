@@ -1,0 +1,171 @@
+{% extends 'global/Page.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px;">Decision Task</h1>
+    </div>
+
+    <div style="text-align: right;">
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+        <p style="font-weight: normal; color: black; font-size: 16px;">
+            Time left: <span id="countdown-timer" style="color: red;">{{ timeout_seconds }}</span> seconds
+        </p>
+        <p id="timeup-message" style="color: red; display: none;">Time is up! Please make a choice and click next.</p>
+    </div>
+</div>
+
+<p>You have been matched with a worker from one of 3 groups. The worker you are matched with solved <strong>{{ worker_solved_problems }}</strong> problems correctly and earned <strong>{{ worker_points_earned }}</strong> ECUs in the addition task.</p>
+
+<!-- Step 1: Do you want to take from the worker's earnings? -->
+<p>Do you want to take from the worker's earnings?</p>
+<div style="text-align: center;">
+    <label><input type="radio" name="wants_to_take" value="Yes" onclick="toggleTakeOptions(true)"> Yes</label>
+    <label><input type="radio" name="wants_to_take" value="No" onclick="toggleTakeOptions(false)"> No</label>
+    {{ formfield_errors 'wants_to_take' }}
+</div>
+
+<!-- Step 2: If wants_to_take is Yes, ask for percentage taken and show transfer option -->
+<div id="take-options" style="display: none; margin-top: 20px; text-align: left;">
+    <p>If you would like to take a percentage of this worker's earnings from the addition task, please enter the amount below. You can only take a maximum of 50%.</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+        <label>Percentage Taken</label>
+        <input type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
+    </div>
+    {{ formfield_errors 'percentage_taken' }}
+
+    <br>
+
+    <p>If you have taken from a worker, the worker in your group may make a report in your group.
+        {% if session.config.treatment_probability == 0.97 %}
+
+    <p> If a report is made, you face a fee with {{ treatment_probabilities }}. The probability of
+    paying a fee will not change if you make a transfer to the authority.</p>
+    {% else %}
+     You can offer a transfer to the authority to intervene on your behalf.</p>
+
+
+
+    <ul style="margin-top: 10px;">
+        <li>If the authority does not intervene on you, you face a 0.97 chance of losing your earnings for this round.</li>
+        <li>If the authority intervenes on your behalf, you face a {{ treatment_probabilities }} chance of losing your earnings for this period.</li>
+        <li><strong>Accepting any transfer will cost the authority 55 ECUs.</strong></li>
+    </ul>
+
+    {% endif %}
+
+    <p>Do you want to pay a transfer to the authority?</p>
+    <div style="text-align: center;">
+        <label><input type="radio" name="wants_to_pay_transfer" value="Yes" onclick="toggleTransferOptions(true)"> Yes</label>
+        <label><input type="radio" name="wants_to_pay_transfer" value="No" onclick="toggleTransferOptions(false)"> No</label>
+        {{ formfield_errors 'wants_to_pay_transfer' }}
+    </div>
+
+    <br>
+
+    <div id="transfer-options" style="display: none; margin-top: 10px; text-align: left;">
+        <p>How much do you want to transfer? </p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <label>Transfer Amount</label>
+            <input type="number" name="transfer_amount" min="1" max="100" style="width: 60px; text-align: center;" /> <span>ECUs</span>
+        </div>
+        {{ formfield_errors 'transfer_amount' }}
+    </div>
+</div>
+
+<!-- JavaScript for Dynamic Display and Timer -->
+<script>
+    function toggleTakeOptions(show) {
+    const takeOptions = document.getElementById("take-options");
+    const wantsToPayTransferYes = document.querySelector('input[name="wants_to_pay_transfer"][value="Yes"]');
+    const wantsToPayTransferNo = document.querySelector('input[name="wants_to_pay_transfer"][value="No"]');
+    const percentageTaken = document.querySelector('input[name="percentage_taken"]');
+
+    takeOptions.style.display = show ? "block" : "none";
+    percentageTaken.required = show; // Only require if "Yes" to taking is selected
+
+    // If "No" to taking, set 'wants_to_pay_transfer' to "No" by default
+    if (!show) {
+        wantsToPayTransferNo.checked = true; // Set "No" by default if not taking
+        toggleTransferOptions(false); // Hide transfer options
+    } else {
+        // Clear the "No" selection if user chooses to take, allowing them to make a fresh choice
+        wantsToPayTransferYes.checked = false;
+        wantsToPayTransferNo.checked = false;
+    }
+}
+
+function toggleTransferOptions(show) {
+    const transferOptions = document.getElementById("transfer-options");
+    const transferAmount = document.querySelector('input[name="transfer_amount"]');
+
+    transferOptions.style.display = show ? "block" : "none";
+    transferAmount.required = show; // Only require if "Yes" to paying transfer is selected
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
+    toggleTransferOptions(document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "Yes");
+});
+
+
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const timerDuration = {{ timeout_seconds }};
+        const timerKey = 'customTimerStart';
+
+        let startTime = localStorage.getItem(timerKey);
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem(timerKey, startTime);
+        }
+
+        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
+
+        const timerDisplay = document.getElementById("countdown-timer");
+        timerDisplay.textContent = timeLeft;
+
+        const countdownInterval = setInterval(() => {
+            timeLeft -= 1;
+            timerDisplay.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                timerDisplay.textContent = "0";
+                document.getElementById("timeup-message").style.display = "block";
+            }
+        }, 1000);
+
+        const otreeTimer = document.querySelector('.otree-timer');
+        if (otreeTimer) {
+            otreeTimer.style.display = 'none';
+        }
+
+        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
+        toggleTransferOptions(document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "Yes");
+    });
+</script>
+
+<style>
+    input[type="number"] {
+        width: 60px;
+        text-align: center;
+    }
+    .input-label-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+</style>
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+{% endblock %}

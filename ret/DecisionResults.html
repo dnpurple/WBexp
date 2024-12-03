@@ -1,0 +1,194 @@
+{% extends "global/Page.html" %}
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <!-- Left: Role Information -->
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+
+    <!-- Center: Page Title -->
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px;">Decision Results</h1>
+    </div>
+
+    <!-- Right: Round Number and Timer -->
+    <div style="text-align: right;">
+
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+    </div>
+</div>
+<br>
+<p>In your group:</p>
+
+
+<!-- Results Table with Bulleted Items and Fixed Column Widths -->
+<div style="width: 100%; display: table; table-layout: fixed; border-collapse: collapse;">
+    <div style="display: table-row; text-align: center;">
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd;">
+            <strong>You</strong>
+        </div>
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd;">
+            <strong>{{ other_player1.get_role }}</strong>
+        </div>
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd;">
+            <strong>{{ other_player2.get_role }}</strong>
+        </div>
+    </div>
+
+
+
+    <div style="display: table-row;">
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd; text-align: left;">
+            <ul style="list-style-type: disc; padding-left: 20px;">
+                {% if player.get_role == "Manager" %}
+                    <li>
+                        {% if percentage_taken == 0 %}
+                            Took nothing from a worker.
+                        {% else %}
+                            Took {{ percentage_taken }}% from worker.
+                        {% endif %}
+                    </li>
+                    <li>
+                        {% if transfer_amount == 0 %}
+                            Did not offer transfer.
+                        {% else %}
+                            Offered {{ transfer_amount }} ECUs as transfer.
+                        {% endif %}
+                    </li>
+                {% elif player.get_role == "Worker" %}
+                    {% if worker_reported %}
+                        <li>Made a report.</li>
+                        <li>
+                            {% if report_successful %}
+                                Report was successful; manager punished.
+                            {% else %}
+                                Report was unsuccessful; manager not punished.
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li>Did not make a report.</li>
+                    {% endif %}
+                {% elif player.get_role == "Authority" %}
+                    <li>
+                        {% if authority_accepted_transfer %}
+                            Accepted transfer.
+                        {% else %}
+                            Did not accept transfer.
+                        {% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <!-- Other Player 1 Decisions -->
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd; text-align: left;">
+            <ul style="list-style-type: disc; padding-left: 20px;">
+                {% if other_player1.get_role == "Manager" %}
+                    <li>
+                        {% if percentage_taken == 0 %}
+                            Took nothing from worker.
+                        {% else %}
+                            Took {{ percentage_taken }}% from worker.
+                        {% endif %}
+                    </li>
+
+                    <li>
+                        {% if transfer_amount == 0 %}
+                            Did not offer transfer.
+                        {% else %}
+                            Offered {{ transfer_amount }} ECUs as transfer.
+                        {% endif %}
+                    </li>
+                {% elif other_player1.get_role == "Worker" %}
+                    {% if worker_reported %}
+                        <li>Made a report.</li>
+                        <li>
+                            {% if report_successful %}
+                                Report was successful; manager punished.
+                            {% else %}
+                                Report was unsuccessful; manager not punished.
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li>Did not make a report.</li>
+                    {% endif %}
+                {% elif other_player1.get_role == "Authority" %}
+                    <li>
+                        {% if authority_accepted_transfer %}
+                            Accepted transfer.
+                        {% else %}
+                            Did not accept transfer.
+                        {% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <!-- Other Player 2 Decisions -->
+        <div style="display: table-cell; padding: 10px; border: 1px solid #ddd; text-align: left;">
+            <ul style="list-style-type: disc; padding-left: 20px;">
+                {% if other_player2.get_role == "Manager" %}
+                    <li>
+                        {% if percentage_taken == 0 %}
+                            Took nothing from worker.
+                        {% else %}
+                            Took {{ percentage_taken }}% from worker.
+                        {% endif %}
+                    </li>
+
+                    <li>
+                        {% if transfer_amount == 0 %}
+                            Did not offer transfer.
+                        {% else %}
+                            Offered {{ transfer_amount }} ECUs as transfer.
+                        {% endif %}
+                    </li>
+                {% elif other_player2.get_role == "Worker" %}
+                    {% if worker_reported %}
+                        <li>Made a report.</li>
+                        <li>
+                            {% if report_successful %}
+                                Report was successful; manager punished.
+                            {% else %}
+                                Report was unsuccessful; manager not punished.
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li>Did not make a report.</li>
+                    {% endif %}
+                {% elif other_player2.get_role == "Authority" %}
+                    <li>
+                        {% if authority_accepted_transfer %}
+                            Accepted transfer.
+                        {% else %}
+                            Did not accept transfer.
+                        {% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Styling to adjust the appearance of the oTree timer -->
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+
+<!-- Right-Aligned Next Button -->
+<div style="text-align: right; margin-top: 20px;">
+    {{ next_button }}
+</div>
+
+{% endblock %}

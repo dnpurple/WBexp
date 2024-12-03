@@ -1,0 +1,311 @@
+{{ block content }}
+<div class="instructions" style="">
+        <h3>
+            <b>Instructions</b>
+        </h3>
+    <p>
+        This is a study in the economics of market decision making. The instructions are simple, and if you follow them carefully and make good decisions
+        you may earn a CONSIDERABLE
+        AMOUNT OF MONEY which will be <b>PAID TO YOU IN CASH </b> at the end of the experiment.
+    </p>
+    <p>
+    <h4>
+       <b> Markets </b>
+    </h4>
+    <hr>
+    </p>
+    <p>
+      In this experiment, you will act as part of a firm, which is in a market with
+        {{ if session.config.num_firms == 2 }}
+            another firm.
+        {{ else }}
+            three other firms.
+        {{ endif }}
+
+
+        The firms produce the same homogenous good and there is no cost to produce these goods.  This market is
+        made up of <b>200 identical consumers</b>, each of whom wants to purchase one unit of the good at the lowest price.
+        The consumers are willing to pay as much as <b>100 Experimental Currency Units </b>({{ C.ECU_LABEL }}) for
+        a unit of the good
+        {{ if session.config.session_treatment == "YES_NO" }}
+            , however you may not charge any price greater than 30.
+        {{ else }}
+            .
+        {{ endif }}
+        {{ if session.config.session_treatment == "YES_NO" }}
+            This means that your firm can choose any price from 0 to 30, including 0 and 30.
+        {{ else }}
+            This means that your firm can choose any price from 0 to 100, including 0 and 100.
+        {{ endif }}
+    </p>
+    <p>
+        The role of the consumers is automated and played by the computer.
+    </p>
+
+    <p>
+       In each market there will be
+        {{ if session.config.num_firms == 2 }}
+        two firms. You will be assigned the role of either <b>Firm Red</b> or <b>Firm Blue</b>.
+        {{ else }}
+        four firms. You will be assigned the role of either <b>Firm Red</b> , <b>Firm Blue</b> , <b>Firm Green</b> or <b>Firm Yellow</b>.
+        {{ endif }}
+        {{ if session.config.num_firms == 2 }}
+        Each firm will be able to supply to 200 consumers.
+        The market will operate as follows. In the beginning of each period, both firms will set their selling prices. If only one firm sets the lowest price, then the firm who sets the lowest
+        price will sell its output at the selected price to all consumers, and the other firm will not sell to any consumers.  If both firms set the lowest price, then they will split the
+        available consumers evenly. At the end of each period, all the firms are informed of their own price as well as the price of the other firm in the market.
+        {{ else }}
+        Each firm will be able to supply to 200 consumers.
+        The market will operate as follows. In the beginning of each period, all firms will set their selling prices. If only one firm sets the lowest price, then the firm who set the lowest
+        price will sell its capacity at the selected price, and the other firms will not sell to any consumers.  If more than one firm set the lowest price, then they will split the
+        available consumers evenly. At the end of each period, all the firms are informed of their own price as well as the prices of all firms in the market.
+        {{ endif }}
+
+    </p>
+
+    <p>
+        In order to fix ideas, consider the following examples:
+    </p>
+
+    <h5 class="mt-4">
+        <b> Example 1 </b>
+    </h5>
+
+    <p>
+        {{ if session.config.num_firms == 2 }}
+            Suppose that the two firms choose the following prices:
+            {{ if session.config.session_treatment == "YES_NO" }}
+                Firm Red sets a price of 20 {{ C.ECU_LABEL }} and firm Blue sets a price of 28 {{ C.ECU_LABEL }}.
+                Firm Red set the lowest price and therefore sells too all 200 consumers
+                at a price of 20 {{ C.ECU_LABEL }}, making a profit of 4,000 {{ C.ECU_LABEL }}. Firm Blue will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+            {{ else }}
+                Firm Red sets a price of 75 {{ C.ECU_LABEL }} and firm Blue sets a price of 85 {{ C.ECU_LABEL }}.
+                Firm Red set the lowest price and therefore sells too all 200 consumers
+                at a price of 75 {{ C.ECU_LABEL }}, making a profit of 15,000 {{ C.ECU_LABEL }}. Firm Blue will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+            {{ endif }}
+        {{ else }}
+            Suppose that the four firms choose the following prices: Firm Red sets a price of 75 {{ C.ECU_LABEL }}, firm Blue sets a price of 80 {{ C.ECU_LABEL }}, firm Green sets a price of 85 ECU and firm Yellow sets a price of 90 ECU.
+            Firm Red set the lowest price and therefore sells too all 200 consumers at a price of 75 {{ C.ECU_LABEL }}, making a profit of 15,000 {{ C.ECU_LABEL }}. Firm Blue, Green and Yellow therefore will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+        {{ endif }}
+    </p>
+
+    <hr>
+    <h5 class="mt-4">
+        <b> Example 2 </b>
+    </h5>
+
+    <p>
+        {{ if session.config.num_firms == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                Suppose that the two firms choose the following prices: Firm Red and firm Blue both set a price of 25 {{ C.ECU_LABEL }}.
+                Given that firms Red and Blue set the same price,
+                they will share the available consumers equally.
+                Hence, both firms will sell 100 units at a price of 25 {{ C.ECU_LABEL }} each, making profits of 2,500 {{ C.ECU_LABEL }} each.
+            {{ else }}
+                Suppose that the two firms choose the following prices: Firm Red and firm Blue both set a price of 70 {{ C.ECU_LABEL }}.
+                Given that firms Red and Blue set the same price,
+                they will share the available consumers equally.
+                Hence, both firms will sell 100 units at a price of 70 {{ C.ECU_LABEL }} each, making profits of 7,000 {{ C.ECU_LABEL }} each.
+            {{ endif }}
+        {{ else }}
+            Suppose that the four firms choose the following prices: Firm Red and firm Blue both set a price of 70 {{ C.ECU_LABEL }}, firm Green and firm Yellow both set a price of 80 {{ C.ECU_LABEL }}.
+            Given that firms Red and Blue set the lowest price and have the same price,
+            they will share the available consumers equally. Hence, both firms will sell 100 units at a price of 70 {{ C.ECU_LABEL }} each unit,
+             making profits of 7,000 {{ C.ECU_LABEL }}. Firm Green and firm Yellow will not sell to any consumers and make 0 {{ C.ECU_LABEL }}.
+        {{ endif }}
+    </p>
+
+    <hr>
+    <h5 class="mt-4">
+        <b> Example 3 </b>
+    </h5>
+    <p>
+        {{ if session.config.num_firms == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                Suppose that the two firms choose the following prices: Firm Red sets a price of 30 {{ C.ECU_LABEL }} and firm Blue sets a price of 3 {{ C.ECU_LABEL }}.
+                Firm Blue set the lowest price and therefore sells too all 200 consumers
+                at a price of 3 {{ C.ECU_LABEL }}, making a profit of 600 {{ C.ECU_LABEL }}. Firm Red will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+            {{ else }}
+                Suppose that the two firms choose the following prices: Firm Red sets a price of 90 {{ C.ECU_LABEL }} and firm Blue sets a price of 3 {{ C.ECU_LABEL }}.
+                Firm Blue set the lowest price and therefore sells too all 200 consumers
+                at a price of 3 {{ C.ECU_LABEL }}, making a profit of 600 {{ C.ECU_LABEL }}. Firm Red will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+            {{ endif }}
+        {{ else }}
+            Suppose that the four firms choose the following prices: Firm Red sets a price of 3 {{ C.ECU_LABEL }}, firm Blue sets a price of 80 {{ C.ECU_LABEL }}, firm Green and firm Yellow set a price of 90 {{ C.ECU_LABEL }}.
+            Firm Red set the lowest price and therefore sells to all 200 consumers at a price of 3 {{ C.ECU_LABEL }}, making a profit of 600 {{ C.ECU_LABEL }}. Firm Blue, Green and Yellow therefore will not sell to any consumers and makes 0 {{ C.ECU_LABEL }}.
+        {{ endif }}
+    </p>
+        {{ if session.config.num_firms == 4 }}
+    <p>
+       <hr>
+    <h5 class="mt-4">
+        <b> Example 4 </b>
+    </h5>
+    </p>
+
+    <p>
+        Suppose that all the firms set a price of 80 {{ C.ECU_LABEL }}. Given that the firms set the same price, they will share the available consumers equally.
+        Hence, all firms will sell 50 units at a price of 80 {{ C.ECU_LABEL }}  each unit, therefore making profits of 4,000 {{ C.ECU_LABEL }}
+
+        {{ endif }}
+    </p>
+    <p>
+    <hr>
+    <h3>
+      <b> Firms </b>
+    </h3>
+    </p>
+
+    <p>
+        {{ if session.config.players_per_group == 2 }}
+            In every period, you will be paired with another subject, and the two of you will act as a firm.
+            You will each be assigned a unique ID, and you will be able to discuss pricing strategy with your teammate using a chat box.
+            Only you and your teammate will be able to see the messages sent within your firm.
+        {{ else }}
+            In every period, you will be paired with three other subjects, and the four of you will act as a firm.
+            You will each be assigned a unique ID, and you will be able to discuss pricing strategy with your teammates using a chat box.
+            Only you and your teammates will be able to see the messages sent within your firm.
+        {{ endif }}
+    </p>
+    <p>
+        During the experiment, you will be able to communicate with your teammate about which price to set using a chat box.
+        In the <b>first two periods</b>, you will have <b>3 minutes</b> to communicate with your teammate and enter the price for your firm.
+    </p>
+    <p>
+        Starting from <b>third period</b>, you will have <b>60 seconds</b> to communicate about prices.  You are allowed to post as many messages as you like.
+        There are only two restrictions on messages: you may not post messages which identify yourself (e.g., age, gender, location etc.), and you may not use offensive language.
+        You should use the time to discuss what price you would like to set as a firm.
+    </p>
+    <p>
+        {{ if session.config.players_per_group == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                If you and your teammate do not agree on a price before your time is up and select two different prices,
+                the computer will randomly select one of the prices chosen.
+                If neither of you enters a price, the computer will select a price at random between 0 and 30
+                with each integer being equally likely to be your firm’s price.
+                If one of you has chosen a price but the other has not, the computer will select the chosen price.
+            {{ else }}
+                If you and your teammate do not agree on a price before your time is up and select two different prices,
+                the computer will randomly select one of the prices chosen.
+                If neither of you enters a price, the computer will select a price at random between 0 and 100
+                with each integer being equally likely to be your firm’s price.
+                If one of you has chosen a price but the other has not, the computer will select the chosen price.
+            {{ endif }}
+        {{ else }}
+        If you and your teammates do not agree on a price before your time is up and select different prices, the computer will randomly select one of the prices chosen,
+        unless there is a majority i.e., at least three of you select the same price. In case of majority, that price will be your firm's price.
+        If neither of you enters a price, the computer will select a price at random between 0 and 100 (no consumers are willing to buy at a price greater than 100), with each integer being equally likely to be your firm’s price.
+        If one of you has chosen a price but the others have not, the computer will select the chosen price.
+        {{ endif }}
+
+    </p>
+    <p>
+        Consider the following examples:
+    </p>
+
+    <p>
+    <h5 class="mt-4">
+        <b> Example 1 </b>
+    </h5>
+    </p>
+
+    <p>
+        {{ if session.config.players_per_group == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                If you both agree on a price and enter the price to be 25, your firm’s price will be set at 25.
+            {{ else }}
+                If you both agree on a price and enter the price to be 75, your firm’s price will be set at 75.
+                {{ endif }}
+        {{ else }}
+        If all of you agree on a price and enter the price to be 75, your firm’s price will be set at 75.
+        {{ endif }}
+    </p>
+
+    <p>
+    <hr>
+    <h5 class="mt-4">
+        <b> Example 2 </b>
+    </h5>
+    </p>
+
+    <p>
+        {{ if session.config.players_per_group == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                Suppose you and your teammate disagree and set prices of 20 and 30, respectively.
+                The computer will randomly select 20 with 50% probability or 30 with 50% probability.
+                Whichever price it selects will be your firm’s price.
+            {{ else }}
+                Suppose you and your teammate disagree and set prices of 70 and 80, respectively.
+                The computer will randomly select 70 with 50% probability or 80 with 50% probability.
+                Whichever price it selects will be your firm’s price.
+            {{ endif }}
+        {{ else }}
+        Suppose you and your teammates disagree completely and set prices of 60, 70, 80 and 90 respectively.
+        The computer will randomly select 60 with 25% probability, 70 with 25% probability, 80 with 25% probability or 90 with 25% probability.
+        Whichever price it selects will be your firm’s price.
+        {{ endif }}
+    </p>
+
+    <p>
+    <hr>
+    <h5 class="mt-4">
+        <b> Example 3 </b>
+    </h5>
+    </p>
+
+    <p>
+        {{ if session.config.players_per_group == 2 }}
+            {{ if session.config.session_treatment == "YES_NO" }}
+                If none of you choose a price within the given period of time, the computer will randomly select 18 as your firm’s price.
+                Again, the random price can be anything from 0-30.
+            {{ else }}
+                If none of you choose a price within the given period of time, the computer will randomly select 72 as your firm’s price.
+                Again, the random price can be anything from 0-100.
+            {{ endif }}
+        {{ else }}
+            If none of you choose a price within the given period of time, the computer will randomly select 72 as your firm’s price. Again, the random price can be anything from 0-100.
+        {{ endif }}
+    </p>
+       <hr>
+    <h5 class="mt-4">
+        <b> More about the experiment </b>
+    </h5>
+    <p>
+        Your teammate will stay the same from period to period until you are told otherwise.
+    </p>
+    <p>
+        Later in the experiment, you will exchange one person from your firm for one person from another firm.
+        That is, one person will leave your firm for the other firm in the market, and a new person from the other firm will join your firm.
+        When your teammate changes, you will be notified several periods in advance and given further instructions.
+    </p>
+    <p>
+        There will be changes in the market during the experiment. You will receive additional instructions when the market changes, so please pay attention.
+    </p>
+
+    <p>
+    <hr>
+    <h4>
+        <b> Duration  </b>
+    </h4>
+    </p>
+
+    <p>
+        There will be 50 periods in the experiment. Upon completion of the experiment, you will complete a short questionnaire, parts of which you will be paid for.
+    </p>
+
+    <p>
+        {{ if session.config.num_firms == 2 }}
+        At the end of the experiment, you will be told of the sum of profits made during the experiment, which will be your payment.
+        Suppose if your firm makes a profit of 200,000 {{ C.ECU_LABEL }}, that means both the employees in your firm will get 200,000 {{ C.ECU_LABEL }} each.
+        You will receive <b>$1</b> for every <b>10,000 {{ C.ECU_LABEL }}</b> you earn during the experiment. You will also receive <b>$7</b> for participating in the experiment.
+        {{ else }}
+        At the end of the experiment, you will be told of the sum of profits made during the experiment, which will be your payment.
+        Suppose if your firm makes a profit of 200,000 {{ C.ECU_LABEL }}, that means all the employees in your firm will get 200,000 {{ C.ECU_LABEL }} each.
+        You will receive <b>$1</b> for every <b> 5,000 {{ C.ECU_LABEL }}</b> you earn during the experiment. You will also receive <b>$7</b> for participating in the experiment.
+        {{ endif }}
+    </p>
+
+</div>
+{{ next_button }}
+
+{{ endblock }}

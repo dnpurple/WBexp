@@ -1,0 +1,75 @@
+{% extends 'global/Page.html' %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: flex-end; padding: 10px;">
+    <p style="font-weight: normal; color: black; font-size: 16px;">
+        Time left: <span id="countdown-timer" style="color: red;">600</span> seconds
+    </p>
+</div>
+
+<div style="text-align: center;">
+    <h1>Final Earnings</h1>
+    <p>Your role: <strong>{{ role }}</strong></p>
+    <p>Round {{ round_number }} of {{ num_rounds }}</p>
+
+    {% if selected_round %}
+        <p>Round <strong>{{ selected_round }}</strong> was selected for payment.</p>
+        <p>You earned <strong>{{ selected_round_earnings }} ECUs</strong> in that round.</p>
+    {% else %}
+        <p>Payment round not yet determined.</p>
+    {% endif %}
+</div>
+
+<!-- Form to enable auto-submit when timer runs out -->
+<form method="post">
+    <!-- Right-Aligned Next Button -->
+    <div style="text-align: right;">
+        {{ next_button }}
+    </div>
+</form>
+
+<!-- Timer countdown script for display and auto-submit -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timerDuration = 600;  // Replace with {{ timeout_seconds }} if it's dynamically passed
+        const startTimeKey = 'roundResultsPageStartTime';
+
+        // Check or set the start time in localStorage
+        let startTime = localStorage.getItem(startTimeKey);
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem(startTimeKey, startTime);
+        }
+
+        // Calculate elapsed time
+        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
+
+        const timerDisplay = document.getElementById("countdown-timer");
+        timerDisplay.textContent = timeLeft;
+
+        // Start countdown and auto-submit when time runs out
+        const countdownInterval = setInterval(() => {
+            timeLeft -= 1;
+            timerDisplay.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                timerDisplay.textContent = "0";
+                localStorage.removeItem(startTimeKey);  // Clear the timer start time
+
+                // Automatically submit the form when time runs out
+                document.querySelector("form").submit();
+            }
+        }, 1000);
+    });
+</script>
+
+<style>
+    .otree-timer {
+        display: none;
+    }
+</style>
+
+{% endblock %}

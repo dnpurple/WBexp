@@ -1,0 +1,143 @@
+{{ extends 'global/Page.html' }}
+{{ block title }}Title{{ endblock }}
+
+{{ block content }}
+
+<script src="https://code.highcharts.com/highcharts.js" type="text/javascript"></script>
+
+ <style>
+        .otree-title {
+            text-align: center;
+        }
+
+        #chart-prediction {
+            height: 50vh;
+            width: 100%;
+        }
+
+        .inline-formfield {
+            width: fit-content;
+            margin: auto;
+        }
+
+        .inline-formfield > div._formfield {
+            width: fit-content;
+            display: flex;
+        }
+
+        .inline-formfield > div._formfield > .col-form-label {
+            margin-right: 1rem;
+        }
+
+        input[type="number"].form-control {
+            max-width: 100px;
+            text-align: center;
+        }
+
+        .table {
+            height: fit-content;
+        }
+    </style>
+
+
+Your prediction for period {{ player.round_number }}
+
+ <div class="inline-formfield mb-3">
+        {{ formfield 'prediction' label=prediction_label }}
+        <div class="text-end">
+            <button class="btn btn-primary otree-btn-next">Send</button>
+        </div>
+    </div>
+
+   
+    <hr>
+
+{{ formfields }}
+
+<div class="d-flex justify-content-between">                                 {{ if player.round_number > 1}} 
+      <div id="chart-prediction"></div>
+
+       <table> class="table table-bordered table-striped w-100"">
+           <thead>
+                   <tr>
+                       <th>Period</th>
+                       <th>Prediction</th>
+
+                       <!-- MODULE - 6 - Exercise 11 (Forecasting Task) -->
+                       <th>Price</th>
+                       <th>Earnings so far</th>
+                   </tr>
+               </thead>
+                                                               
+                <tbody>
+                   <!-- MODULE - 6 - Exercise 11 (Forecasting Task) -->
+                   {{ for h in history }}
+
+                       <tr>
+                           <td>{{ h.0.round_number }}</td>
+                           <td>{{ h.0.prediction }}</td>
+                           <td>{{ h.1 }}</td>
+                           <td>{{ h.0.earnings_so_far }}</td>
+                       </tr>
+
+                   {{ endfor }}
+               </tbody>
+           </table>
+
+       {{ endif }}
+   </div>
+                                                                               
+{{ next_button }}
+
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+window.addEventListener('load', () => {
+  
+  
+ const graphContainer = document.getElementById('chart-prediction');
+
+            // Correct syntax to generate a chart:
+            // Highcharts.chart(container_element, {chart specifications})
+            const graph = Highcharts.chart(graphContainer, {
+                title: {
+                    text: ''
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    categories: js_vars.periods,
+                    title: {
+                        text: 'Periods'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: ''
+                    },
+                    min: 0,
+                    max: 100,
+                    plotLines: [{
+                        value: 0,
+                        width: 1,
+                        color: '#808080'
+                    }]
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    floating: true,
+                    borderWidth: 1
+                },
+                series: js_vars.series
+            });
+        })
+</script>
+<!-- Right-Aligned Next Button -->
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
