@@ -2,11 +2,6 @@
 
 {% block content %}
 
-<div style="display: flex; justify-content: flex-end; padding: 10px;">
-    <p style="font-weight: normal; color: black; font-size: 16px;">
-        Time left: <span id="countdown-timer" style="color: red;">600</span> seconds
-    </p>
-</div>
 
 <div style="text-align: center;">
     <h1>Final Earnings</h1>
@@ -21,55 +16,29 @@
     {% endif %}
 </div>
 
-<!-- Form to enable auto-submit when timer runs out -->
-<form method="post">
+
     <!-- Right-Aligned Next Button -->
     <div style="text-align: right;">
         {{ next_button }}
     </div>
 </form>
 
-<!-- Timer countdown script for display and auto-submit -->
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const timerDuration = 600;  // Replace with {{ timeout_seconds }} if it's dynamically passed
-        const startTimeKey = 'roundResultsPageStartTime';
-
-        // Check or set the start time in localStorage
-        let startTime = localStorage.getItem(startTimeKey);
-        if (!startTime) {
-            startTime = Date.now();
-            localStorage.setItem(startTimeKey, startTime);
+{{ block styles }}
+    <style>
+        .input-group, input.form-control, select.form-control {
+            max-width: 150px;
         }
 
-        // Calculate elapsed time
-        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
-
-        const timerDisplay = document.getElementById("countdown-timer");
-        timerDisplay.textContent = timeLeft;
-
-        // Start countdown and auto-submit when time runs out
-        const countdownInterval = setInterval(() => {
-            timeLeft -= 1;
-            timerDisplay.textContent = timeLeft;
-
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                timerDisplay.textContent = "0";
-                localStorage.removeItem(startTimeKey);  // Clear the timer start time
-
-                // Automatically submit the form when time runs out
-                document.querySelector("form").submit();
-            }
-        }, 1000);
-    });
-</script>
-
-<style>
-    .otree-timer {
-        display: none;
+   .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
     }
-</style>
+    </style>
+
+{{ endblock }}
 
 {% endblock %}

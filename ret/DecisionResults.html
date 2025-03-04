@@ -50,33 +50,16 @@
                         {% endif %}
                     </li>
                     <li>
-                        {% if transfer_amount == 0 %}
+                        {% if not wants_to_pay_transfer %}
                             Did not offer transfer.
                         {% else %}
-                            Offered {{ transfer_amount }} ECUs as transfer.
+                            Offered a transfer.
                         {% endif %}
                     </li>
                 {% elif player.get_role == "Worker" %}
-                    {% if worker_reported %}
-                        <li>Made a report.</li>
-                        <li>
-                            {% if report_successful %}
-                                Report was successful; manager punished.
-                            {% else %}
-                                Report was unsuccessful; manager not punished.
-                            {% endif %}
-                        </li>
-                    {% else %}
-                        <li>Did not make a report.</li>
-                    {% endif %}
+                    <li>{{ report_outcome }}</li>
                 {% elif player.get_role == "Authority" %}
-                    <li>
-                        {% if authority_accepted_transfer %}
-                            Accepted transfer.
-                        {% else %}
-                            Did not accept transfer.
-                        {% endif %}
-                    </li>
+                    <li>{{ authority_outcome }}</li>
                 {% endif %}
             </ul>
         </div>
@@ -94,33 +77,16 @@
                     </li>
 
                     <li>
-                        {% if transfer_amount == 0 %}
+                        {% if not wants_to_pay_transfer %}
                             Did not offer transfer.
                         {% else %}
-                            Offered {{ transfer_amount }} ECUs as transfer.
+                            Offered a transfer.
                         {% endif %}
                     </li>
                 {% elif other_player1.get_role == "Worker" %}
-                    {% if worker_reported %}
-                        <li>Made a report.</li>
-                        <li>
-                            {% if report_successful %}
-                                Report was successful; manager punished.
-                            {% else %}
-                                Report was unsuccessful; manager not punished.
-                            {% endif %}
-                        </li>
-                    {% else %}
-                        <li>Did not make a report.</li>
-                    {% endif %}
+                    <li>{{ report_outcome }}</li>
                 {% elif other_player1.get_role == "Authority" %}
-                    <li>
-                        {% if authority_accepted_transfer %}
-                            Accepted transfer.
-                        {% else %}
-                            Did not accept transfer.
-                        {% endif %}
-                    </li>
+                    <li>{{ authority_outcome }}</li>
                 {% endif %}
             </ul>
         </div>
@@ -138,33 +104,16 @@
                     </li>
 
                     <li>
-                        {% if transfer_amount == 0 %}
+                        {% if not wants_to_pay_transfer %}
                             Did not offer transfer.
                         {% else %}
-                            Offered {{ transfer_amount }} ECUs as transfer.
+                            Offered a transfer.
                         {% endif %}
                     </li>
                 {% elif other_player2.get_role == "Worker" %}
-                    {% if worker_reported %}
-                        <li>Made a report.</li>
-                        <li>
-                            {% if report_successful %}
-                                Report was successful; manager punished.
-                            {% else %}
-                                Report was unsuccessful; manager not punished.
-                            {% endif %}
-                        </li>
-                    {% else %}
-                        <li>Did not make a report.</li>
-                    {% endif %}
+                    <li>{{ report_outcome }}</li>
                 {% elif other_player2.get_role == "Authority" %}
-                    <li>
-                        {% if authority_accepted_transfer %}
-                            Accepted transfer.
-                        {% else %}
-                            Did not accept transfer.
-                        {% endif %}
-                    </li>
+                    <li>{{ authority_outcome }}</li>
                 {% endif %}
             </ul>
         </div>

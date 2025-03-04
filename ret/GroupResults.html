@@ -20,7 +20,11 @@
 </div>
 
 <div style="text-align: center;">
-<p>You solved <strong>{{ player.num_solved }}</strong> problems correctly and earned <strong>{{ player.points_earned }} ECUs</strong>.</p>
+    {% if is_authority %}
+        <p>Your salary is <strong>{{ salary }} ECUs</strong>.</p>
+    {% else %}
+        <p>You solved <strong>{{ player.num_solved }}</strong> problems correctly and earned <strong>{{ player.points_earned }} ECUs</strong>.</p>
+    {% endif %}
 </div>
 
 <script>

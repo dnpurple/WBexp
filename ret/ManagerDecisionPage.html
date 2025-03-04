@@ -1,21 +1,115 @@
-{% extends 'global/Page.html' %}
+{% extends "global/Page.html" %}
+{% load otree static %}
+{% block scripts %}
+<script>
+    function toggleTakeOptions(show) {
+        const takeOptions = document.getElementById("take-options");
+        const wantsToPayTransferYes = document.querySelector('input[name="wants_to_pay_transfer"][value="True"]');
+        const wantsToPayTransferNo = document.querySelector('input[name="wants_to_pay_transfer"][value="False"]');
+        const percentageTaken = document.querySelector('input[name="percentage_taken"]');
+
+        takeOptions.style.display = show ? "block" : "none";
+        percentageTaken.required = show; // Only require if "Yes" to taking is selected
+
+        if (!show) {
+            // If "No" to taking, reset fields
+            wantsToPayTransferNo.checked = true;
+            wantsToPayTransferYes.checked = false;
+            percentageTaken.value = "0"; // Set percentage to 0
+            percentageTaken.disabled = true; // Disable the input to visually indicate it's not needed
+        } else {
+            // If "Yes" to taking, enable and clear fields for fresh input
+            wantsToPayTransferYes.checked = false;
+            wantsToPayTransferNo.checked = false;
+            percentageTaken.value = ""; // Clear the percentage input
+            percentageTaken.disabled = false; // Enable the input
+            percentageTaken.required = true; // Explicitly require it when "Yes" is selected
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize based on the currently selected value
+        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
+
+        // Prevent form submission if conditions aren't met
+        document.querySelector("form").addEventListener("submit", function(e) {
+            const wantsToTake = document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes";
+            const wantsToPayTransfer = document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "True";
+            const percentageTaken = document.querySelector('input[name="percentage_taken"]').value;
+
+            if (!document.querySelector('input[name="wants_to_take"]:checked')) {
+                e.preventDefault();
+                alert("Please select whether you want to take from the worker's earnings.");
+                return;
+            }
+
+            if (wantsToTake) {
+                if (!percentageTaken || percentageTaken <= 0 || percentageTaken > 50) {
+                    e.preventDefault();
+                    alert("Please enter a valid percentage between 1 and 50 if you want to take from the worker's earnings.");
+                    return;
+                }
+                if (!document.querySelector('input[name="wants_to_pay_transfer"]:checked')) {
+                    e.preventDefault();
+                    alert("Please select whether you want to pay a transfer to the authority.");
+                    return;
+                }
+            }
+
+            if (!wantsToTake && wantsToPayTransfer) {
+                e.preventDefault();
+                alert("You cannot offer a transfer if you are not taking from the worker. Please select 'No' for the transfer.");
+                document.querySelector('input[name="wants_to_pay_transfer"][value="False"]').checked = true;
+                document.querySelector('input[name="wants_to_pay_transfer"][value="True"]').checked = false;
+            }
+        });
+    });
+</script>
+
+<style>
+    input[type="number"] { width: 60px; text-align: center; }
+    .input-label-container { display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .radio-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+        margin: 10px auto;
+        width: fit-content;
+    }
+    .otree-radio-option {
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+    .otree-radio-option label {
+        margin: 0 5px;
+    }
+</style>
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
     <div>
         <p>Your role is: <strong>{{ player.get_role }}</strong></p>
     </div>
-
     <div style="text-align: center;">
         <h1 style="font-weight: bold; font-size: 20px;">Decision Task</h1>
     </div>
-
     <div style="text-align: right;">
         <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
-        <p style="font-weight: normal; color: black; font-size: 16px;">
-            Time left: <span id="countdown-timer" style="color: red;">{{ timeout_seconds }}</span> seconds
-        </p>
-        <p id="timeup-message" style="color: red; display: none;">Time is up! Please make a choice and click next.</p>
     </div>
 </div>
 
@@ -23,147 +117,36 @@
 
 <!-- Step 1: Do you want to take from the worker's earnings? -->
 <p>Do you want to take from the worker's earnings?</p>
-<div style="text-align: center;">
-    <label><input type="radio" name="wants_to_take" value="Yes" onclick="toggleTakeOptions(true)"> Yes</label>
-    <label><input type="radio" name="wants_to_take" value="No" onclick="toggleTakeOptions(false)"> No</label>
+<div class="radio-container">
+    <label><input type="radio" name="wants_to_take" value="True" onclick="toggleTakeOptions(true)"> Yes</label>
+    <label><input type="radio" name="wants_to_take" value="False" onclick="toggleTakeOptions(false)"> No</label>
     {{ formfield_errors 'wants_to_take' }}
 </div>
 
-<!-- Step 2: If wants_to_take is Yes, ask for percentage taken and show transfer option -->
+<!-- Step 2: Percentage taken and transfer option (only visible if wants_to_take = Yes) -->
 <div id="take-options" style="display: none; margin-top: 20px; text-align: left;">
     <p>If you would like to take a percentage of this worker's earnings from the addition task, please enter the amount below. You can only take a maximum of 50%.</p>
-    <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+    <div class="input-label-container">
         <label>Percentage Taken</label>
         <input type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
     </div>
     {{ formfield_errors 'percentage_taken' }}
-
     <br>
 
-    <p>If you have taken from a worker, the worker in your group may make a report in your group.
-        {% if session.config.treatment_probability == 0.97 %}
-
-    <p> If a report is made, you face a fee with {{ treatment_probabilities }}. The probability of
-    paying a fee will not change if you make a transfer to the authority.</p>
-    {% else %}
-     You can offer a transfer to the authority to intervene on your behalf.</p>
-
-
-
+    <p>If you have taken from a worker, the worker in your group may make a report in your group. You can offer a transfer to the authority to intervene on your behalf.</p>
     <ul style="margin-top: 10px;">
         <li>If the authority does not intervene on you, you face a 0.97 chance of losing your earnings for this round.</li>
-        <li>If the authority intervenes on your behalf, you face a {{ treatment_probabilities }} chance of losing your earnings for this period.</li>
-        <li><strong>Accepting any transfer will cost the authority 55 ECUs.</strong></li>
+        <li>If the authority intervenes on your behalf, you face a {{ treatment_probability }} chance of losing your earnings for this period.</li>
     </ul>
-
-    {% endif %}
-
-    <p>Do you want to pay a transfer to the authority?</p>
-    <div style="text-align: center;">
-        <label><input type="radio" name="wants_to_pay_transfer" value="Yes" onclick="toggleTransferOptions(true)"> Yes</label>
-        <label><input type="radio" name="wants_to_pay_transfer" value="No" onclick="toggleTransferOptions(false)"> No</label>
-        {{ formfield_errors 'wants_to_pay_transfer' }}
-    </div>
-
-    <br>
-
-    <div id="transfer-options" style="display: none; margin-top: 10px; text-align: left;">
-        <p>How much do you want to transfer? </p>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-            <label>Transfer Amount</label>
-            <input type="number" name="transfer_amount" min="1" max="100" style="width: 60px; text-align: center;" /> <span>ECUs</span>
+    <div class="transfer-option">
+        <p>Do you want to pay a transfer of 60 ECUs to the authority?</p>
+        <div class="radio-container">
+            <label><input type="radio" name="wants_to_pay_transfer" value="True"> Yes</label>
+            <label><input type="radio" name="wants_to_pay_transfer" value="False"> No</label>
+            {{ formfield_errors 'wants_to_pay_transfer' }}
         </div>
-        {{ formfield_errors 'transfer_amount' }}
     </div>
 </div>
-
-<!-- JavaScript for Dynamic Display and Timer -->
-<script>
-    function toggleTakeOptions(show) {
-    const takeOptions = document.getElementById("take-options");
-    const wantsToPayTransferYes = document.querySelector('input[name="wants_to_pay_transfer"][value="Yes"]');
-    const wantsToPayTransferNo = document.querySelector('input[name="wants_to_pay_transfer"][value="No"]');
-    const percentageTaken = document.querySelector('input[name="percentage_taken"]');
-
-    takeOptions.style.display = show ? "block" : "none";
-    percentageTaken.required = show; // Only require if "Yes" to taking is selected
-
-    // If "No" to taking, set 'wants_to_pay_transfer' to "No" by default
-    if (!show) {
-        wantsToPayTransferNo.checked = true; // Set "No" by default if not taking
-        toggleTransferOptions(false); // Hide transfer options
-    } else {
-        // Clear the "No" selection if user chooses to take, allowing them to make a fresh choice
-        wantsToPayTransferYes.checked = false;
-        wantsToPayTransferNo.checked = false;
-    }
-}
-
-function toggleTransferOptions(show) {
-    const transferOptions = document.getElementById("transfer-options");
-    const transferAmount = document.querySelector('input[name="transfer_amount"]');
-
-    transferOptions.style.display = show ? "block" : "none";
-    transferAmount.required = show; // Only require if "Yes" to paying transfer is selected
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
-    toggleTransferOptions(document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "Yes");
-});
-
-
-
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const timerDuration = {{ timeout_seconds }};
-        const timerKey = 'customTimerStart';
-
-        let startTime = localStorage.getItem(timerKey);
-        if (!startTime) {
-            startTime = Date.now();
-            localStorage.setItem(timerKey, startTime);
-        }
-
-        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
-
-        const timerDisplay = document.getElementById("countdown-timer");
-        timerDisplay.textContent = timeLeft;
-
-        const countdownInterval = setInterval(() => {
-            timeLeft -= 1;
-            timerDisplay.textContent = timeLeft;
-
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                timerDisplay.textContent = "0";
-                document.getElementById("timeup-message").style.display = "block";
-            }
-        }, 1000);
-
-        const otreeTimer = document.querySelector('.otree-timer');
-        if (otreeTimer) {
-            otreeTimer.style.display = 'none';
-        }
-
-        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
-        toggleTransferOptions(document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "Yes");
-    });
-</script>
-
-<style>
-    input[type="number"] {
-        width: 60px;
-        text-align: center;
-    }
-    .input-label-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-    }
-</style>
 
 <div style="text-align: right;">
     {{ next_button }}

@@ -4,7 +4,7 @@ c = cu
 
 
 class C(BaseConstants):
-    NAME_IN_URL = 'focal_crt'
+    NAME_IN_URL = 'wb_crt'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
     REWARD_PER_CORRECT_ANSWER = 0.50  # 50 cents per correct answer
@@ -74,6 +74,8 @@ class Player(BasePlayer):
 class CRT(Page):
     form_model = 'player'
     form_fields = ['quiz1', 'quiz2', 'quiz3', 'quiz4', 'quiz5', 'quiz6']
+    timer_text = 'Time left:'
+    timeout_seconds = 300
 
     @staticmethod
     def error_message(player: Player, values):
@@ -107,6 +109,8 @@ class CRT(Page):
 
 
 class Next(Page):
+    timer_text = 'Time left:'
+    timeout_seconds = 30
 
     @staticmethod
     def vars_for_template(player: Player):

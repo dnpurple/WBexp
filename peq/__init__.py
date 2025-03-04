@@ -6,7 +6,7 @@ doc = ''
 
 
 class C(BaseConstants):
-    NAME_IN_URL = 'focal_survey'
+    NAME_IN_URL = 'wb_survey'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
 
@@ -40,26 +40,26 @@ class Player(BasePlayer):
     risk_preference = models.IntegerField(
         choices=[[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9'], [10, '10']],
         label='Please tell us, in general, how willing or unwilling you are to take risks. Please use a scale from 0 to 10, where 0 means you are "completely unwilling to take risks" and a 10 means you are "very willing to take risks". You can also use any numbers between 0 and 10 to indicate where you fall on the scale, like 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.',
-        widget=widgets.RadioSelect)
+        widget=widgets.RadioSelectHorizontal)
     time_discounting = models.IntegerField(
         choices=[[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9'],
                  [10, '10']],
         label='In comparison to others, are you a person who is generally willing to give up something today in order to benefit from that in the future or are you not willing to do so? Please use a scale from 0 to 10, where a 0 means, “you are completely unwilling to give up something today" and a 10 means “you are very willing to give up something today". You can also use the values in-between to indicate where you fall on the scale.',
-        widget=widgets.RadioSelect)
+        widget=widgets.RadioSelectHorizontal)
     trust = models.IntegerField(
         choices=[[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9'],
                  [10, '10']],
         label='How well does the following statement describe you as a person? As long as I am not convinced otherwise, I assume that people have only the best intentions. Please use a scale from 0 to 10, where 0 means “does not describe me at all" and a 10 means “describes me perfectly". You can also use the values in-between to indicate where you fall on the scale.',
-        widget=widgets.RadioSelect)
+        widget=widgets.RadioSelectHorizontal)
     positive_reciprocity = models.IntegerField(
         choices=[[5, '5'], [10, '10'], [15, '15'], [20, '20'], [25, '25'], [30, '30']],
         label='Imagine the following situation: you are shopping in an unfamiliar city and realize you lost your way. You ask a stranger for directions. The stranger offers to take you with their car to your destination. The ride takes about 20 minutes and costs the stranger about 20 Dollars in total. The stranger does not want money for it. You carry six bottles of wine with you. The cheapest bottle costs 5 Dollars, the most expensive one 30 Dollars. You decide to give one of the bottles to the stranger as a thank-you gift. Which bottle do you give? Respondents can choose from the following options: The bottle for 5, 10, 15, 20, 25, or 30 Dollars)',
-        widget=widgets.RadioSelect)
+        widget=widgets.RadioSelectHorizontal)
     negative_reciprocity = models.IntegerField(
         choices=[[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7'], [8, '8'], [9, '9'],
                  [10, '10']],
         label='How do you see yourself: Are you a person who is generally willing to punish unfair behavior even if this is costly? Please use a scale from 0 to 10, where 0 means you are “not willing at all to incur costs to punish unfair behavior" and a 10 means you are “very willing to incur costs to punish unfair behavior". You can also use the values in-between to indicate where you fall on the scale.',
-        widget=widgets.RadioSelect)
+        widget=widgets.RadioSelectHorizontal)
     Extraverted_enthusiastic = models.StringField(
         choices= [['Disagree strongly', 'Disagree strongly'], ['Disagree moderately', 'Disagree moderately'],
                   ['Disagree a little', 'Disagree a little'], ['Neither agree nor disagree', 'Neither agree nor disagree'],
@@ -143,6 +143,8 @@ class Player(BasePlayer):
 class Demographics(Page):
     form_model = 'player'
     form_fields = ['age', 'gender', 'major', 'econ', 'uni', 'gpa']
+    timer_text = 'Time left:'
+    timeout_seconds = 120  # 4 minutes (adjust as needed)
 
 
 class TIPI(Page):
@@ -150,11 +152,15 @@ class TIPI(Page):
     form_fields = ['Extraverted_enthusiastic','Critical_quarrelsome','Dependable_self_disciplined','Anxious_easily_upset',
                    'Open_to_new_experiences_complex','Reserved_quiet','Sympathetic_warm','Disorganized_careless',
                    'Calm_emotionally_stable','Conventional_uncreative']
+    timer_text = 'Time left:'
+    timeout_seconds = 120
 
 
 class Behavioral(Page):
     form_model = 'player'
     form_fields = ['reasoning', 'risk_preference', 'time_discounting', 'trust', 'positive_reciprocity', 'negative_reciprocity', 'instructions', 'understanding']
+    timer_text = 'Time left:'
+    timeout_seconds = 300
 
 
 class Thankyou(Page):

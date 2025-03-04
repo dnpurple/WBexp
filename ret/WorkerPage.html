@@ -1,4 +1,65 @@
 {% extends 'global/Page.html' %}
+{% load otree static %}
+
+{% block scripts %}
+
+
+
+
+<!-- New JavaScript for Slider Interaction and Next Button Control -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+
+        // Initialize Sliders with dynamic color (unchanged)
+        updateSliderValue(document.getElementById('slider_self').value, 'self');
+        updateSliderValue(document.getElementById('slider_other').value, 'other');
+
+        // Track slider interactions and control Next button
+        let selfSliderInteracted = false;
+        let otherSliderInteracted = false;
+        const nextButton = document.querySelector('.otree-btn-next');
+
+        // Disable Next button by default
+        nextButton.disabled = true;
+
+        // Function to update Next button state
+        function updateNextButtonState() {
+            nextButton.disabled = !(selfSliderInteracted && otherSliderInteracted);
+        }
+
+        // Add event listeners to sliders to track interaction
+        document.getElementById('slider_self').addEventListener('input', function() {
+            if (!selfSliderInteracted) {
+                selfSliderInteracted = true;
+                updateNextButtonState();
+            }
+            updateSliderValue(this.value, 'self');
+        });
+
+        document.getElementById('slider_other').addEventListener('input', function() {
+            if (!otherSliderInteracted) {
+                otherSliderInteracted = true;
+                updateNextButtonState();
+            }
+            updateSliderValue(this.value, 'other');
+        });
+    });
+
+    function updateSliderValue(value, type) {
+        const sliderValueParagraph = document.getElementById(`slider-value-${type}`);
+        if (value == 51) {
+            sliderValueParagraph.textContent = "A report will not be made.";
+        } else {
+            sliderValueParagraph.innerHTML = `If your manager took a minimum of <span id="slider-display-${type}" class="boxed-number">${value}</span> percent from ${type == 'self' ? 'you' : 'another worker'}, a report will be made.`;
+        }
+
+        const slider = document.getElementById(`slider_${type}`);
+        const percentage = ((value - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.background = `linear-gradient(to right, red ${percentage}%, green ${percentage}%)`;
+    }
+</script>
+{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
@@ -9,24 +70,15 @@
         <h1 style="font-weight: bold; font-size: 20px;">Decision Task</h1>
     </div>
     <div style="text-align: right;">
-        <p>Round: {{ round_number }} of {{ total_rounds }}</p>
-        <p style="font-weight: normal; color: black; font-size: 16px;">
-            Time left: <span id="countdown-timer" style="color: red;">{{ timeout_seconds }}</span> seconds
-        </p>
-        <p id="timeup-message" style="color: red; display: none;">Time is up! Please make a choice and click next.</p>
+        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
     </div>
 </div>
 
 <p>The manager in your group was given an opportunity to take from a randomly selected worker from one of the three groups. They also had the opportunity to make a transfer to the authority in your group.
 If your manager chose to take from a worker, you can report them.
 </p>
-{% if session.config.treatment_probability == 0.97 %}
-<p> The acceptance of a transfer will not affect the probability of a successful report. your report will be successful with {{ report_penalty_probabilities }} probability. </p>
-
-{% else %}
 <p> If a transfer is not accepted, your report will be successful with {{ report_penalty_probabilities }} probability.
-If a transfer is accepted, your report will be successful with {{ treatment_probabilities }} probability.</p>
-{% endif %}
+If a transfer is accepted, your report will be successful with {{ player.treatment_probability }} probability.</p>
 
 <ul>
     <li>If your report is successful, you will gain 50 ECUs, and your manager will lose his earnings from the addition task for that round and what he took from the worker.</li>
@@ -34,7 +86,7 @@ If a transfer is accepted, your report will be successful with {{ treatment_prob
     <li>Since you don't know who the randomly selected worker is, you will select a minimum percentage to report for both yourself and another worker.</li>
 </ul>
 
-<p>Please interact with the slider to make a choice.</p>
+<p>Please interact with the sliders to make your choices. You must interact with both sliders to move on.</p>
 
 <!-- Slider for Minimum Report Percentage for Self -->
 <div class="slider-container">
@@ -52,7 +104,14 @@ If a transfer is accepted, your report will be successful with {{ treatment_prob
         </div>
     </div>
 </div>
-<p id="slider-value-self">If your manager took a minimum of <span id="slider-display-self" class="boxed-number">{{ random_start_self }}</span> percent from you, a report will be made.</p>
+
+<p id="slider-value-self">
+    {% if random_start_self == 51 %}
+        A report will not be made.
+    {% else %}
+        If your manager took a minimum of <span id="slider-display-self" class="boxed-number">{{ random_start_self }}</span> percent from you, a report will be made.
+    {% endif %}
+</p>
 
 <br>
 
@@ -72,68 +131,20 @@ If a transfer is accepted, your report will be successful with {{ treatment_prob
         </div>
     </div>
 </div>
-<p id="slider-value-other">If your manager took a minimum of <span id="slider-display-other" class="boxed-number">{{ random_start_other }}</span> percent from another worker, a report will be made.</p>
+
+<p id="slider-value-other">
+    {% if random_start_other == 51 %}
+        A report will not be made.
+    {% else %}
+        If your manager took a minimum of <span id="slider-display-other" class="boxed-number">{{ random_start_other }}</span> percent from another worker, a report will be made.
+    {% endif %}
+</p>
 
 <div style="text-align: right;">
     {{ next_button }}
 </div>
 
-<!-- JavaScript for Slider and Timer Interaction -->
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Timer Setup
-        const timerDuration = {{ timeout_seconds }};
-        const startTimeKey = 'workerPageTimerStart';
-
-        let startTime = localStorage.getItem(startTimeKey);
-        if (!startTime) {
-            startTime = Date.now();
-            localStorage.setItem(startTimeKey, startTime);
-        }
-
-        const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-        let timeLeft = Math.max(timerDuration - timeElapsed, 0);
-
-        const timerDisplay = document.getElementById("countdown-timer");
-        timerDisplay.textContent = timeLeft;
-
-        const countdownInterval = setInterval(() => {
-            timeLeft -= 1;
-            timerDisplay.textContent = timeLeft;
-
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                timerDisplay.textContent = "0";
-                localStorage.removeItem(startTimeKey);  // Reset timer for next page load
-                document.getElementById("timeup-message").style.display = "block";  // Show "Time is up!" message
-            }
-        }, 1000);
-
-        // Remove oTree’s default auto-advance functionality
-        const otreeTimer = document.querySelector('.otree-timer');
-        if (otreeTimer) {
-            otreeTimer.removeAttribute("data-auto-submit");
-        }
-
-        // Initialize Sliders with dynamic color
-        updateSliderValue(document.getElementById('slider_self').value, 'self');
-        updateSliderValue(document.getElementById('slider_other').value, 'other');
-    });
-
-    function updateSliderValue(value, type) {
-        const sliderDisplay = document.getElementById(`slider-display-${type}`);
-        sliderDisplay.textContent = value;
-
-        const slider = document.getElementById(`slider_${type}`);
-        const percentage = ((value - slider.min) / (slider.max - slider.min)) * 100;
-
-        slider.style.background = `linear-gradient(to right, red ${percentage}%, green ${percentage}%)`;
-
-        
-    }
-</script>
-
-<!-- Styling for Sliders and Timer -->
+<!-- Styling for Sliders and Timer (unchanged) -->
 <style>
     .slider-container {
         position: relative;
@@ -206,10 +217,19 @@ If a transfer is accepted, your report will be successful with {{ treatment_prob
         box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
     }
 
+    .otree-btn-next:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+
     .otree-timer {
-        display: none !important;
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
     }
 </style>
-
 {% endblock %}
-

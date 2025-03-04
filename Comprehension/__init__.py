@@ -1,22 +1,21 @@
 from otree.api import *
 
-c = cu
-
+c = cu  # Assuming this is a typo; replace with Currency if needed
 doc = ''
 
 
 class C(BaseConstants):
-    NAME_IN_URL = 'comprehension'
+    NAME_IN_URL = 'wb_comprehension'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
     INSTRUCTIONS_TEMPLATE = 'my_instructions/instructions.html'
     ECU_LABEL = 'ECUs'
-    Percentage_LABEL = '%'
+    PERCENTAGE_LABEL = '%'
 
-    QUIZ_FIEDLS = [f'quiz_{n}' for n in range(1, 9)]
+    QUIZ_FIELDS = [f'quiz_{n}' for n in range(1, 9)]
     QUIZ_LABELS_NO = [
-        "If a manger takes from a worker, will the worker lose all their earnings?",
-        "Can a report be made if the managers takes from a worker?",
+        "If a manager takes from a worker, will the worker lose all their earnings?",
+        "Can a report be made if the manager takes from a worker?",
         "Can anything be done to change the likelihood of a successful report?",
         "What is the likelihood of a successful report?",
         "Will a worker receive a reward if their report is successful?",
@@ -25,8 +24,8 @@ class C(BaseConstants):
         "My role will change at some point in the experiment."
     ]
     QUIZ_LABELS_LOW = [
-        "If a manger takes from a worker, will the worker lose all their earnings?",
-        "Can a report be made if the managers takes from a worker?",
+        "If a manager takes from a worker, will the worker lose all their earnings?",
+        "Can a report be made if the manager takes from a worker?",
         "Can anything be done to change the likelihood of a successful report?",
         "What is the likelihood of a successful report if no transfer is accepted?",
         "Will a worker receive a reward if their report is successful?",
@@ -35,8 +34,8 @@ class C(BaseConstants):
         "My role will change at some point in the experiment."
     ]
     QUIZ_LABELS_HIGH = [
-        "If a manger takes from a worker, will the worker lose all their earnings?",
-        "Can a report be made if the managers takes from a worker?",
+        "If a manager takes from a worker, will the worker lose all their earnings?",
+        "Can a report be made if the manager takes from a worker?",
         "Can anything be done to change the likelihood of a successful report?",
         "What is the likelihood of a successful report if no transfer is accepted?",
         "Will a worker receive a reward if their report is successful?",
@@ -45,9 +44,15 @@ class C(BaseConstants):
         "My role will change at some point in the experiment."
     ]
 
+    # Local treatment mapping
+    TREATMENT_MAP = {
+        'low_to_high': 0.7,  # LOW interference (0.7) for comprehension
+        'high_to_low': 0.3,  # HIGH interference (0.3) for comprehension
+    }
+
 
 class Subsession(BaseSubsession):
-    pass
+    pass  # No need to set session fields since we’re using config directly
 
 
 class Group(BaseGroup):
@@ -80,85 +85,86 @@ class Player(BasePlayer):
     quiz_8_wrong_attempts = models.IntegerField(initial=0)
 
 
-
 # PAGES
 class Instructions(Page):
+    timer_text = 'Time left:'
     @staticmethod
     def vars_for_template(player: Player):
+        # Get treatment order from session config
+        treatment_order = player.session.config['treatment_order']
+        interference_level = C.TREATMENT_MAP[treatment_order]  # 0.7 or 0.3
+
         return {
-            'treatment_probability': int(player.session.config['treatment_probability'] * 100),  # Convert to percentage
-            'interference_level': player.session.config['interference_level']  # Pass interference level to template
+            'treatment_probability': int(interference_level * 100),  # e.g., 70 or 30
+            'interference_level': 'LOW' if interference_level == 0.7 else 'HIGH'
         }
 
 
 class Comprehension(Page):
     form_model = 'player'
-    form_fields = C.QUIZ_FIEDLS
+    form_fields = C.QUIZ_FIELDS
+    timeout_seconds = 300  # 5-minute timer
 
     @staticmethod
     def vars_for_template(player: Player):
-        # Mapping the interference levels to the respective quiz labels
-        treatment_mapping = {
-            "NO": C.QUIZ_LABELS_NO,
-            "LOW": C.QUIZ_LABELS_LOW,
-            "HIGH": C.QUIZ_LABELS_HIGH,
-        }
+        # Get treatment order from session config
+        treatment_order = player.session.config['treatment_order']
+        interference_level = C.TREATMENT_MAP[treatment_order]  # 0.7 or 0.3
 
-        # Retrieve the labels based on the session's `interference_level`
-        labels = treatment_mapping.get(player.session.config['interference_level'], C.QUIZ_LABELS_NO)
+        # Map interference level to quiz labels
+        treatment_mapping = {
+            0.7: C.QUIZ_LABELS_LOW,  # LOW interference (0.7)
+            0.3: C.QUIZ_LABELS_HIGH  # HIGH interference (0.3)
+        }
+        labels = treatment_mapping.get(interference_level, C.QUIZ_LABELS_NO)
 
         return dict(
-            fields=list(zip(C.QUIZ_FIEDLS, labels))
+            fields=list(zip(C.QUIZ_FIELDS, labels))
         )
 
     @staticmethod
     def error_message(player: Player, values):
+        # Get treatment order from session config
+        treatment_order = player.session.config['treatment_order']
+        interference_level = C.TREATMENT_MAP[treatment_order]  # 0.7 or 0.3
+
         # Define solutions for each interference level
         solutions_mapping = {
-            "NO": dict(
+            0.7: dict(  # LOW interference (0.7)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(False, 'The likelihood of a successful report cannot be changed'),
+                quiz_3=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_4=(97, 'The likelihood of a successful report is 97%.'),
-                quiz_5=(True,
-                        'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
+                quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment'),
+                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
-            "LOW": dict(
+            0.3: dict(  # HIGH interference (0.3)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer'),
+                quiz_3=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_4=(97, 'The likelihood of a successful report is 97%.'),
-                quiz_5=(True,
-                        'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
+                quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment'),
+                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
-            "HIGH": dict(
+            None: dict(  # Default (no interference)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer'),
+                quiz_3=(False, 'The likelihood of a successful report cannot be changed.'),
                 quiz_4=(97, 'The likelihood of a successful report is 97%.'),
-                quiz_5=(True,
-                        'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
+                quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment'),
+                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
         }
 
-        # Retrieve the correct solutions based on the session's `interference_level`
-        solutions = solutions_mapping.get(player.session.config['interference_level'], solutions_mapping["NO"])
+        solutions = solutions_mapping.get(interference_level, solutions_mapping[None])
+        error_msgs = {k: solutions[k][1] for k, v in values.items() if v != solutions[k][0]}
 
-        # Check for errors
-        error_msgs = {
-            k: solutions[k][1] for k, v in values.items() if v != solutions[k][0]
-        }
-
-        # Increment wrong attempts for incorrect answers
         for k in error_msgs.keys():
             num = getattr(player, f'{k}_wrong_attempts')
             setattr(player, f'{k}_wrong_attempts', num + 1)
@@ -170,6 +176,4 @@ class EndComprehension(Page):
     pass
 
 
-page_sequence = [
-    Instructions, Comprehension, EndComprehension
-]
+page_sequence = [Instructions, Comprehension]

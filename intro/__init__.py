@@ -4,7 +4,7 @@ c = cu
 
 doc = 'PartA'
 class C(BaseConstants):
-    NAME_IN_URL = 'Part_A'
+    NAME_IN_URL = 'wb_part_a'
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
 
@@ -183,9 +183,8 @@ class BaselineResults(Page):
     @staticmethod
     def get_timeout_seconds(player: Player):
         if player.round_number == 1:
-            return 600  # Set a longer timeout for the first round if desired
-        else:
-            return 300  # Shorter timeout for other rounds
+            return 60  # Set a longer timeout for the first round if desired
+
 
     @staticmethod
     def is_displayed(player: Player):

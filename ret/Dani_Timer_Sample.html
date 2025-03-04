@@ -1,0 +1,54 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block scripts %} <!--Here, I'm creating a timer that doesn't submit the page, and a warning message when time's up -->
+<script>
+  function startTimer(duration, display) { //this is the time function
+    var timer = duration, minutes, seconds;
+    setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            timer = 0;
+        }
+    }, 1000);
+}
+
+window.onload = function () {
+    var time_left = 10, //here, you choose the time parameter in seconds (10 seconds)
+        display = document.querySelector('#time');
+    startTimer(time_left, display);
+};
+
+</script>
+
+<script>
+setTimeout(
+    function () {
+      alert("Time has run out. Please make your decision."); //this is the message displayed once time runs out
+    },
+    11*1000 // Here, you need to indicate how many seconds should pass before the message pops up. Time is measured in miliseconds, so you multiple the number of seconds (11) by 1000. 11 is one more second that the timer above
+);
+</script>
+
+
+{% endblock %}
+
+{% block content %}
+
+<body>
+
+  <section align="center" style="border:black; border-width:2px; border-style:solid;font-size:16px">
+        <td><b>Remaining Time:&emsp;&emsp;</b> <br> <span style="color:red;font-size:20px" id="time">00:10</span></td> <!-- Here, you state the starting time loaded into the page when it is opened (0:10 minutes). This is not related to the function, it's just visual -->
+  </section>
+<!--Here, you will insert the rest of your HTML code-->
+
+</body>
+
+{% endblock %}

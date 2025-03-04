@@ -58,14 +58,13 @@
 
     <p>Debug: Interference level is {{ interference_level }}</p>
     <h4>Authority</h4>
-    {{ if session.config.treatment_probability == 0.97 }}
-    <p>Authorities earn a base salary of 500 ECUs and can increase earnings by completing the math task (100 ECUs per correct answer). They may accept transfer offers from managers who have taken earnings from workers. Accepting the transfer will not change the likelihood of the manager facing a fee if reported. Accepting the transfer will cost the authority 55 ECUs.</p>
-    {% else %}
-    <p>Authorities earn a base salary of 500 ECUs and can increase earnings by completing the math task (100 ECUs per correct answer). They may accept transfer offers from managers who have taken earnings from workers. Accepting the transfer reduces the likelihood of the manager facing a fee if reported. Intervening on behalf of a manager incurs a cost of 55 ECUs for the authority, with a reduced probability of {{ treatment_probability }}% for the manager facing a fee.</p>
-    {% endif %}
+
+
+    <p>Authorities earn a base salary of 500 ECUs and can increase earnings by completing the math task (100 ECUs per correct answer). They may accept transfer offers from managers who have taken earnings from workers. Accepting the transfer reduces the likelihood of the manager facing a fee if reported. Intervening on behalf of a manager incurs a cost of 55 ECUs for the authority, with a reduced probability for the manager facing a fee.</p>
+
 
         <h3>Reporting</h3>
-    <p>Workers can choose to report managers who take ECUs. Reporting costs 100 ECUs. If a worker reports a manager, and the authority does not intervene, there is a 97% chance of the manager facing a fee. If the authority intervenes, the chance decreases to {{ treatment_probability }}. A manager who pays a fee results in a reward of 200 ECUs to the worker who reported.</p>
+    <p>Workers can choose to report managers who take ECUs. Reporting costs 100 ECUs. If a worker reports a manager, and the authority does not intervene, there is a 97% chance of the manager facing a fee. If the authority intervenes, the chance decreases. A manager who pays a fee results in a reward of 200 ECUs to the worker who reported.</p>
 
     <h3>Experimental Flowchart</h3>
     <p>The actions within each period are summarized in the flowchart below:</p>

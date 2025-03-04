@@ -1,0 +1,26 @@
+{% extends "global/Page.html" %}
+{% block content %}
+
+<div style="text-align: center; padding: 20px;">
+    <h2>Notice</h2>
+    <p>There has been a change in the way reports are handled.</p>
+    <p>If a report is made, it will now be successful with a <strong>{{ success_percentage }}%</strong> probability.</p>
+</div>
+
+
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+    }
+</style>
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+{% endblock %}
