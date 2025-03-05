@@ -1,21 +1,15 @@
 {% extends 'global/Page.html' %}
-
 {% load otree static %}
 
-{% block scripts %} <!--Here, I'm creating a timer that doesn't submit the page, and a warning message when time's up -->
+{% block scripts %}
 <script>
-
-
-    // Ensure no radio is checked by default
-    const radios = document.querySelectorAll('input[name="authority_accepted_transfer"]');
-    radios.forEach(radio => radio.checked = false);
-};
-
+    // Wait for the DOM to load before running
+    document.addEventListener("DOMContentLoaded", function() {
+        // Uncheck all radio buttons for authority_accepted_transfer
+        const radios = document.querySelectorAll('input[name="authority_accepted_transfer"]');
+        radios.forEach(radio => radio.checked = false);
+    });
 </script>
-
-
-
-
 {% endblock %}
 
 {% block content %}
@@ -37,8 +31,6 @@
     <li>If you accept, you will pay <strong>{{ interfere_cost }} ECUs</strong> to intervene, reducing the report success chance from 97% to {{ player.treatment_probability }}.</li>
     <li>If you reject, no transfer occurs, and the report success chance stays at 97%.</li>
 </ul>
-
-
 <br>
 
 <p>Do you want to accept the Manager’s transfer of 60 ECUs?</p>
@@ -47,14 +39,10 @@
     {{ formfield_errors 'authority_accepted_transfer' }}
 </div>
 
-
-
 <!-- Right-Aligned Next Button -->
 <div style="text-align: right;">
     {{ next_button }}
 </div>
-
-
 
 <style>
     .otree-timer {
@@ -72,6 +60,6 @@
         gap: 20px;
         margin: 10px auto;
         width: fit-content;
+    }
 </style>
-
 {% endblock %}

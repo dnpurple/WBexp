@@ -1,7 +1,7 @@
 {% extends "global/Page.html" %}
+{% load otree %}
 
 {% block content %}
-
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
     <!-- Left: Role Information -->
     <div>
@@ -13,17 +13,19 @@
         <h2 style="font-weight: bold; font-size: 20px;">Round Results</h2>
     </div>
 
-    <!-- Right: Round Number and Timer -->
+    <!-- Right: Round Number -->
     <div style="text-align: right;">
         <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
-
     </div>
 </div>
 
 <div style="text-align: center;">
-    <p>If the computer selects this round for payment, you will receive:</strong></p>
-    <p> <strong>{{ player.points_earned }} ECUs</strong> for the Addition Task,</p>
-
+    <p>If the computer selects this round for payment, you will receive:</p>
+    {% if player.get_role == "Authority" %}
+        <p><strong>{{ player.points_earned }} ECUs</strong> from your salary,</p>
+    {% else %}
+        <p><strong>{{ player.points_earned }} ECUs</strong> for the Addition Task,</p>
+    {% endif %}
     <p><strong>{{ total_earnings }}</strong> ECUs in total.</p>
 </div>
 
@@ -39,9 +41,7 @@
     }
 </style>
 
-
 <div style="text-align: right;">
     {{ next_button }}
 </div>
-
 {% endblock %}

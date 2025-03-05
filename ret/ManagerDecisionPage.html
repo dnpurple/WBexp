@@ -1,5 +1,6 @@
 {% extends "global/Page.html" %}
 {% load otree static %}
+
 {% block scripts %}
 <script>
     function toggleTakeOptions(show) {
@@ -9,31 +10,27 @@
         const percentageTaken = document.querySelector('input[name="percentage_taken"]');
 
         takeOptions.style.display = show ? "block" : "none";
-        percentageTaken.required = show; // Only require if "Yes" to taking is selected
+        percentageTaken.required = show;
 
         if (!show) {
-            // If "No" to taking, reset fields
             wantsToPayTransferNo.checked = true;
             wantsToPayTransferYes.checked = false;
-            percentageTaken.value = "0"; // Set percentage to 0
-            percentageTaken.disabled = true; // Disable the input to visually indicate it's not needed
+            percentageTaken.value = "0";
+            percentageTaken.disabled = true;
         } else {
-            // If "Yes" to taking, enable and clear fields for fresh input
             wantsToPayTransferYes.checked = false;
             wantsToPayTransferNo.checked = false;
-            percentageTaken.value = ""; // Clear the percentage input
-            percentageTaken.disabled = false; // Enable the input
-            percentageTaken.required = true; // Explicitly require it when "Yes" is selected
+            percentageTaken.value = "";
+            percentageTaken.disabled = false;
+            percentageTaken.required = true;
         }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-        // Initialize based on the currently selected value
-        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes");
+        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "True");
 
-        // Prevent form submission if conditions aren't met
         document.querySelector("form").addEventListener("submit", function(e) {
-            const wantsToTake = document.querySelector('input[name="wants_to_take"]:checked')?.value === "Yes";
+            const wantsToTake = document.querySelector('input[name="wants_to_take"]:checked')?.value === "True";
             const wantsToPayTransfer = document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "True";
             const percentageTaken = document.querySelector('input[name="percentage_taken"]').value;
 
@@ -61,6 +58,7 @@
                 alert("You cannot offer a transfer if you are not taking from the worker. Please select 'No' for the transfer.");
                 document.querySelector('input[name="wants_to_pay_transfer"][value="False"]').checked = true;
                 document.querySelector('input[name="wants_to_pay_transfer"][value="True"]').checked = false;
+                return; // Ensure it stops here
             }
         });
     });
@@ -86,8 +84,6 @@
     .otree-radio-option label {
         margin: 0 5px;
     }
-</style>
-<style>
     .otree-timer {
         background-color: transparent !important;
         color: black !important;
@@ -97,7 +93,6 @@
         text-align: right;
     }
 </style>
-
 {% endblock %}
 
 {% block content %}
