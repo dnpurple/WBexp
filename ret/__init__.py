@@ -384,11 +384,7 @@ def set_payoffs(group: Group):
     print(
         f"Final Earnings - Worker: {worker.total_earnings}, Manager: {manager.total_earnings}, Authority: {authority.total_earnings}")
 
-class Instructions(Page):
-    form_model = 'player'
-    @staticmethod
-    def is_displayed(player: Player):
-        return player.round_number == 1
+
 class Quiz(Page):
     form_model = 'player'
     form_fields = ['q1', 'q2', 'q3', 'q4']
@@ -665,8 +661,7 @@ class ResultsWaitPage(WaitPage):
 
    body_text = "Please wait while other participants are making their decisions."
 
-class Feedback(Page):
-    form_model = 'player'
+
 class DecisionResults(Page):
     form_model = 'group'
     timer_text = 'Time left:'
