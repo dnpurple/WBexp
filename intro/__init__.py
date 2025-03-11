@@ -155,7 +155,7 @@ class PartAInstructions(Page):
     @staticmethod
     def get_timeout_seconds(player: Player):
         if player.round_number == 1:
-            return 60  # Shorter timeout for other rounds
+            return 600  # Shorter timeout for other rounds
 
     @staticmethod
     def is_displayed(player: Player):

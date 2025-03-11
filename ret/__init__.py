@@ -33,7 +33,7 @@ class C(BaseConstants):
     WORKER_REPORT_REWARD = 50  # For example, worker gets 50 points if report succeeds
     WORKER_REPORT_PENALTY = 20  # Worker loses 20 points if report fails
     MANAGER_REPORT_PENALTY = 100  # Manager loses 100 points if report succeeds
-    INTERFERE_COST = 55
+    INTERFERE_COST = 5
     TRANSFER_AMOUNT = 60
     ALPHA_LOW = 0.7  # Low interference (less corruption)
     ALPHA_HIGH = 0.3  # High interference (more corruption)

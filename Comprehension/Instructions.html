@@ -151,3 +151,76 @@
     }, 200);
 </script>
 {% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(() => {
+            readInstructions();
+        }, 200); // Slight delay to allow voices to load
+    });
+
+    function readInstructions() {
+        if ('speechSynthesis' in window) {
+            const instructionsText = document.getElementById("instructionsText").innerText;
+            // Replace "ECUs" with "E C USE" for clearer pronunciation
+            const processedText = instructionsText.replaceAll("___", "blank").replaceAll("ECUs", "E C USE");
+
+            const speechParts = splitText(processedText, 200);
+            let partIndex = 0;
+
+            function readNextPart() {
+                if (partIndex < speechParts.length) {
+                    const speech = new SpeechSynthesisUtterance(speechParts[partIndex]);
+                    speech.lang = 'en-US';
+                    // Fine-tune for a natural human voice
+                    speech.pitch = 1.0;          // Neutral pitch (1.0 is default, slight variation feels human)
+                    speech.rate = 0.9;           // Slightly slower rate (0.9) for natural pacing
+                    speech.volume = 1.0;         // Full volume for clarity
+                    // Add subtle pauses and intonation
+                    speech.onboundary = (event) => {
+                        if (event.name === 'word' && Math.random() < 0.1) {
+                            speech.pause();
+                            setTimeout(() => speech.resume(), 100); // Random micro-pauses
+                        }
+                    };
+                    speech.voice = selectedVoice; // Use the same voice throughout
+                    speech.onend = () => {
+                        partIndex++;
+                        readNextPart();
+                    };
+                    window.speechSynthesis.speak(speech);
+                } else {
+                    document.getElementById("nextButton").disabled = false;
+                }
+            }
+            readNextPart();
+        } else {
+            alert("Your browser does not support text-to-speech functionality.");
+        }
+    }
+
+    function splitText(text, maxLength) {
+        const parts = [];
+        while (text.length > maxLength) {
+            let splitIndex = text.lastIndexOf(' ', maxLength);
+            if (splitIndex === -1) splitIndex = maxLength;
+            parts.push(text.slice(0, splitIndex));
+            text = text.slice(splitIndex + 1);
+        }
+        parts.push(text);
+        return parts;
+    }
+
+    // Select a preferred voice with a slight delay to ensure loading
+    let selectedVoice;
+    setTimeout(() => {
+        const voices = window.speechSynthesis.getVoices();
+        selectedVoice = voices.find(voice => voice.name.includes('Natural') || voice.name.includes('Google US English') || voice.name.includes('Female')) || voices[0];
+        // Fallback to a female or natural voice for a human-like tone
+        if (!selectedVoice.name.includes('Natural') && !selectedVoice.name.includes('Female')) {
+            selectedVoice = voices.find(voice => voice.name.includes('Female')) || selectedVoice;
+        }
+    }, 200);
+</script>
+{% endblock %}

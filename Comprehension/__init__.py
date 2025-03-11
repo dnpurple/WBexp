@@ -1,6 +1,6 @@
 from otree.api import *
 
-c = cu  # Assuming this is a typo; replace with Currency if needed
+c = cu
 doc = ''
 
 
