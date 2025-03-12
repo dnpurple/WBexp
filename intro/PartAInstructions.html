@@ -1,31 +1,32 @@
-
 {{ block content }}
-        <div style="text-align: center;">
-           <h2><strong>Part A Instructions</strong></h2>
-        </div>
+<div style="text-align: center;">
+    <h2><strong>Part A Instructions</strong></h2>
+</div>
 
-        <br>
+<br>
 
+<!-- Wrap the instructions in a div with id="instructionsText" -->
+<div id="instructionsText">
+    <p>
+        This is an experiment in the economics of decision-making. If you follow the instructions carefully,
+        you may earn a <strong>considerable amount of money</strong> depending on your decisions and the decisions of others.
+        Your earnings will be <strong>paid to you in cash</strong> at the end of the experiment.
+    </p>
 
-        <p>
-            This is an experiment in the economics of decision-making. If you follow the instructions carefully,
-            you may earn a <strong>considerable amount of money</strong> depending on your decisions and the decisions of others.
-            Your earnings will be <strong>paid to you in cash</strong> at the end of the experiment.</p>
+    <h3>Addition Task</h3>
 
-        <h3>Addition Task</h3>
+    <p>In Part A, you will complete an addition task. The addition task consists of adding three 2-digit numbers,
+        e.g., 31 + 23 + 45 = blank. You will be given 1 minute to complete as many
+        addition problems as possible. You will earn 100 Experimental Currency Units (ECUs)
+        for each correct answer. These earnings will be added to earnings from later parts
+        of this experiment at an exchange rate of:</p>
 
-        <p>In Part A, you will complete an addition task.The addition task consists of adding three 2-digit numbers,
-            e.g., 31 + 23 + 45 = ___. You will be given 1 minute to complete as many
-            addition problems as possible.  You will earn 100 Experimental Currency Units (ECUs)
-            for each correct answer. These earnings will be added to earnings from later parts
-            of this experiment  at an exchange rate of:</p>
+    <div style="text-align: center;">
+        <p><strong>$1 = 55 ECUs</strong></p>
+    </div>
 
-        <div style="text-align: center;">
-           <p><strong>$1 = 55 ECUs</strong></p>
-        </div>
-
-        <p>Please click the next button to start Part A when the recording ends.</p>
-
+    <p>Please click the next button to start Part A when the recording ends.</p>
+</div>
 
 <style>
     .otree-timer {
@@ -42,5 +43,84 @@
 <div style="text-align: center; margin-top: 20px;">
     <button id="nextButton" disabled>Next</button>
 </div>
+{{ endblock }}
 
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(() => {
+            readInstructions();
+        }, 200); // Slight delay to allow voices to load
+    });
+
+    function readInstructions() {
+        if ('speechSynthesis' in window) {
+            const instructionsText = document.getElementById("instructionsText").innerText;
+            // Replace "ECUs" with "E C USE" for clearer pronunciation
+            const processedText = instructionsText.replaceAll("___", "blank").replaceAll("ECUs", "E C USE");
+
+            const speechParts = splitText(processedText, 200);
+            let partIndex = 0;
+
+            function readNextPart() {
+                if (partIndex < speechParts.length) {
+                    const speech = new SpeechSynthesisUtterance(speechParts[partIndex]);
+                    speech.lang = 'en-US';
+                    // Fine-tune for a natural human voice
+                    speech.pitch = 1.0;          // Neutral pitch
+                    speech.rate = 0.9;           // Slightly slower for natural pacing
+                    speech.volume = 1.0;         // Full volume for clarity
+                    // Add subtle pauses for natural rhythm
+                    speech.onboundary = (event) => {
+                        if (event.name === 'word' && Math.random() < 0.1) {
+                            speech.pause();
+                            setTimeout(() => speech.resume(), 100);
+                        }
+                    };
+                    speech.voice = selectedVoice; // Use the same voice throughout
+                    speech.onend = () => {
+                        partIndex++;
+                        readNextPart();
+                    };
+                    // Debug: Log when speech starts
+                    speech.onstart = () => {
+                        console.log("Speech started for part " + partIndex);
+                    };
+                    speech.onerror = (event) => {
+                        console.log("Speech error: ", event.error);
+                    };
+                    window.speechSynthesis.speak(speech);
+                } else {
+                    document.getElementById("nextButton").disabled = false;
+                }
+            }
+            readNextPart();
+        } else {
+            alert("Your browser does not support text-to-speech functionality.");
+        }
+    }
+
+    function splitText(text, maxLength) {
+        const parts = [];
+        while (text.length > maxLength) {
+            let splitIndex = text.lastIndexOf(' ', maxLength);
+            if (splitIndex === -1) splitIndex = maxLength;
+            parts.push(text.slice(0, splitIndex));
+            text = text.slice(splitIndex + 1);
+        }
+        parts.push(text);
+        return parts;
+    }
+
+    // Select a preferred voice with a slight delay to ensure loading
+    let selectedVoice;
+    setTimeout(() => {
+        const voices = window.speechSynthesis.getVoices();
+        selectedVoice = voices.find(voice => voice.name.includes('Natural') || voice.name.includes('Google US English') || voice.name.includes('Female')) || voices[0];
+        if (!selectedVoice.name.includes('Natural') && !selectedVoice.name.includes('Female')) {
+            selectedVoice = voices.find(voice => voice.name.includes('Female')) || selectedVoice;
+        }
+        console.log("Selected voice:", selectedVoice.name); // Debug voice selection
+    }, 200);
+</script>
 {{ endblock }}

@@ -20,16 +20,22 @@ SESSION_CONFIGS = [
     ),
 ]
 
+
 ROOMS = [
-    {
-        "name": "room_low_to_high",
-        "display_name": "Low to High Interference Room",
-    },
-    {
-        "name": "room_high_to_low",
-        "display_name": "High to Low Interference Room",
-    },
+    dict(
+        name='high_low',
+        display_name='High to Low',
+        participant_label_file='_rooms/workstation.txt',
+    ),
+    dict(
+        name='low_high',
+        display_name='Low to High',
+        participant_label_file='_rooms/workstation.txt',
+    ),
+
+
 ]
+
 
 LANGUAGE_CODE = 'en'
 REAL_WORLD_CURRENCY_CODE = 'USD'
