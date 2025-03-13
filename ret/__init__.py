@@ -1057,18 +1057,5 @@ class NextRound(WaitPage):
     title_text = " "
     body_text = "Please wait until the experiment continues."
 
-class StartWaitPage(WaitPage):
-    title_text = "Waiting to Start"
-    body_text = "Please wait until all participants are ready and the experimenter starts the session."
 
-    @staticmethod
-    def is_displayed(player: Player):
-        return player.round_number == 1  # Only show in the first round
-
-    wait_for_all_groups = True  # Waits for all participants in the session
-
-    # Optional: Add a timer if you want a max wait time (e.g., 10 minutes)
-   # @staticmethod
-    #def get_timeout_seconds(player: Player):
-     #   return 600  # 10 minutes, adjust as needed
-page_sequence = [StartWaitPage, YourRoleIs, RET, WaitingFeedback, GroupResults,BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults, NextRound, TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults,BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults, NextRound, TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]

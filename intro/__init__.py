@@ -190,7 +190,20 @@ class BaselineResults(Page):
     def is_displayed(player: Player):
         return True
         # Show this page in all rounds
+class StartWaitPage(WaitPage):
+    title_text = "Waiting to Start"
+    body_text = "Please wait until all participants are ready and the experimenter starts the session."
 
+    @staticmethod
+    def is_displayed(player: Player):
+        return player.round_number == 1  # Only show in the first round
+
+    wait_for_all_groups = True  # Waits for all participants in the session
+
+    # Optional: Add a timer if you want a max wait time (e.g., 10 minutes)
+   # @staticmethod
+    #def get_timeout_seconds(player: Player):
+     #   return 600  # 10 minutes, adjust as needed
 
 #class Welcome(Page):
  #   form_model = 'player'
@@ -198,4 +211,4 @@ class BaselineResults(Page):
  #   form_model = 'player'
 #class GeneralInfo(Page):
  #   form_model = 'player'
-page_sequence = [PartAInstructions, RETBaseline, BaselineResults, ResultsWaitPage]
+page_sequence = [StartWaitPage, PartAInstructions, RETBaseline, BaselineResults, ResultsWaitPage]
