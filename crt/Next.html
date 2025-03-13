@@ -1,6 +1,11 @@
 {{ block content }}
-    <p>Your total payoff from the experiment is {{ total_earnings }}.</p>
-    <p>Please press the next button to continue to the survey.</p>
+<p>Here are your earnings from each part of the experiment:</p>
+<ul>
+    <li>Part A: {{ part_a_earnings }}</li>
+    <li>Part B: {{ part_b_earnings }}</li>
+    <li>CRT: {{ crt_earnings }}</li>
+</ul>
+<p>Your total payoff from the experiment is {{ total_earnings }}    <p>Please press the next button to continue to the survey.</p>
     {{ next_button }}
 
 <style>

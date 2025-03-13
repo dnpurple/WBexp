@@ -13,7 +13,7 @@ class C(BaseConstants):
     ADDENDUM_MAX_VALUE = 99
 
     # MODULE 7 - Exercise 4
-    BONUS_PER_SOLVED_ADDITION = 3
+    BONUS_PER_SOLVED_ADDITION = 100
 
 
 class Subsession(BaseSubsession):
@@ -136,7 +136,7 @@ class RETBaseline(Page):
 
     def get_timeout_seconds(player: Player):
         session = player.session
-        return 6  # player.session.config['quiz_timeout_seconds']
+        return 60  # player.session.config['quiz_timeout_seconds']
 
 
 class PartAInstructions(Page):
@@ -155,7 +155,7 @@ class PartAInstructions(Page):
     @staticmethod
     def get_timeout_seconds(player: Player):
         if player.round_number == 1:
-            return 600  # Shorter timeout for other rounds
+            return 65  # Shorter timeout for other rounds
 
     @staticmethod
     def is_displayed(player: Player):
@@ -183,7 +183,7 @@ class BaselineResults(Page):
     @staticmethod
     def get_timeout_seconds(player: Player):
         if player.round_number == 1:
-            return 60  # Set a longer timeout for the first round if desired
+            return 20  # Set a longer timeout for the first round if desired
 
 
     @staticmethod
@@ -192,10 +192,10 @@ class BaselineResults(Page):
         # Show this page in all rounds
 
 
-class Welcome(Page):
-    form_model = 'player'
-class PaymentInfo(Page):
-    form_model = 'player'
-class GeneralInfo(Page):
-    form_model = 'player'
+#class Welcome(Page):
+ #   form_model = 'player'
+#class PaymentInfo(Page):
+ #   form_model = 'player'
+#class GeneralInfo(Page):
+ #   form_model = 'player'
 page_sequence = [PartAInstructions, RETBaseline, BaselineResults, ResultsWaitPage]

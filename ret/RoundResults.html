@@ -20,13 +20,11 @@
 </div>
 
 <div style="text-align: center;">
+
+
     <p>If the computer selects this round for payment, you will receive:</p>
-    {% if player.get_role == "Authority" %}
-        <p><strong>{{ player.points_earned }} ECUs</strong> from your salary,</p>
-    {% else %}
-        <p><strong>{{ player.points_earned }} ECUs</strong> for the Addition Task,</p>
-    {% endif %}
-    <p><strong>{{ total_earnings }}</strong> ECUs in total.</p>
+
+    <p><strong>{{ total_earnings }}</strong> ECUs.</p>
 </div>
 
 <!-- Styling to adjust the appearance of the oTree timer -->

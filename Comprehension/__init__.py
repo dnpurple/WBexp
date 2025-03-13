@@ -103,7 +103,7 @@ class Instructions(Page):
 class Comprehension(Page):
     form_model = 'player'
     form_fields = C.QUIZ_FIELDS
-    timeout_seconds = 300  # 5-minute timer
+    #timeout_seconds = 300  # 5-minute timer
 
     @staticmethod
     def vars_for_template(player: Player):

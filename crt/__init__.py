@@ -110,7 +110,7 @@ class CRT(Page):
 
 class Next(Page):
     timer_text = 'Time left:'
-    timeout_seconds = 30
+    timeout_seconds = 20
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -124,14 +124,18 @@ class Next(Page):
         baseline_earnings_currency = baseline_earnings / C.EXCHANGE_RATE
 
         # Calculate total earnings by combining all components
-        total_earnings = math.ceil(selected_round_earnings_currency + crt_earnings + baseline_earnings_currency)
+        #total_earnings = math.ceil(selected_round_earnings_currency + crt_earnings + baseline_earnings_currency)
+        total_earnings = selected_round_earnings_currency + crt_earnings + baseline_earnings_currency
 
         # Set participant payoff for use in the payment tab
         player.participant.payoff = total_earnings
 
         # Return total earnings to display or use in templates if needed
         return {
-            'total_earnings': total_earnings
+            'total_earnings': total_earnings,
+            'part_b_earnings': selected_round_earnings_currency,
+            'part_a_earnings': baseline_earnings_currency,
+            'crt_earnings': crt_earnings,
         }
 
     @staticmethod

@@ -136,7 +136,7 @@ class Player(BasePlayer):
         label='Were the instructions clear? Please explain in a few lines.'
     )
     understanding = models.LongStringField(
-        label='Did you understand the game? Please explain in a few lines.'
+        label='Did you understand the game? Any recommendations? Please explain in a few lines.'
     )
 
 
@@ -153,7 +153,7 @@ class TIPI(Page):
                    'Open_to_new_experiences_complex','Reserved_quiet','Sympathetic_warm','Disorganized_careless',
                    'Calm_emotionally_stable','Conventional_uncreative']
     timer_text = 'Time left:'
-    timeout_seconds = 120
+    timeout_seconds = 300
 
 
 class Behavioral(Page):
