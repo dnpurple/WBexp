@@ -94,7 +94,6 @@ class Subsession(BaseSubsession):
             manager.participant.vars['paired_worker_id'] = worker.participant.id
             worker.participant.vars['paired_manager_id'] = manager.participant.id
             # Store the victim’s participant ID in the manager’s group
-            manager.group.victim_worker_participant_id = worker.participant.id
             print(f"DEBUG: Round {self.round_number}, Manager {manager.participant.id} "
                   f"(Group {manager.group.id_in_subsession}) paired with Worker {worker.participant.id} "
                   f"(Group {worker.group.id_in_subsession})")
@@ -136,9 +135,6 @@ class Group(BaseGroup):
     offer_accepted = models.BooleanField()
     amount_offered = models.IntegerField(choices=C.OFFER_CHOICES)
     authority_transfer_asked = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label='Do you want accept a transfer?', widget=widgets.RadioSelectHorizontal)
-
-    victim_worker_participant_id = models.IntegerField(
-            doc="Participant ID of the worker paired with this group’s manager")
 
     victim_worker_id = models.IntegerField()  # Add a field to store the victim's ID
     authority_accepted_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label ='',widget=widgets.RadioSelectHorizontal, initial=False)  # <-- Add this field
@@ -290,7 +286,7 @@ def set_payoffs(group: Group):
     worker_in_group = group.get_player_by_id(1)  # The worker in this group who can report
 
     # Find the paired victim worker (who loses earnings)
-    victim_participant_id = group.victim_worker_participant_id
+    victim_participant_id = manager.participant.vars.get('paired_worker_id')
     victim_worker = None
     for p in group.subsession.get_players():
         if p.participant.id == victim_participant_id:
@@ -714,12 +710,30 @@ class DecisionResults(Page):
         victim_worker_id = group.field_maybe_none('victim_worker_id')
         is_victim = player.id_in_group == victim_worker_id if victim_worker_id is not None else False
 
+        # Get the victim worker for display purposes (not reporting)
+        manager = group.get_player_by_id(2)
+        victim_participant_id = manager.participant.vars.get('paired_worker_id')
+        victim_worker = None
+        for p in player.subsession.get_players():
+            if p.participant.id == victim_participant_id:
+                victim_worker = p
+                break
+
+        players = group.get_players()
+        other_players = [p for p in players if p != player]
+        other_player1 = other_players[0]
+        other_player2 = other_players[1]
+
+        min_report_percentage_other_worker = group.field_maybe_none('min_report_percentage_other_worker')
+        min_report_percentage_self = group.field_maybe_none('min_report_percentage_self')
+
         worker = next(p for p in players if p.id_in_group == 1)  # The group’s worker
         manager = next(p for p in players if p.id_in_group == 2)  # The group’s manager
 
         # Use the worker’s stored report status (about their own manager)
-        worker_reported = worker.worker_reported
-        report_successful = worker.report_successful
+        worker_in_group = group.get_player_by_id(1)
+        worker_reported = worker_in_group.worker_reported
+        report_successful = worker_in_group.report_successful
 
 
         # Authority transfer details
