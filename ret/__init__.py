@@ -12,7 +12,7 @@ doc = 'real effort task'
 class C(BaseConstants):
     NAME_IN_URL = 'wb_part_b'
     PLAYERS_PER_GROUP = 3
-    NUM_ROUNDS = 5
+    NUM_ROUNDS = 20
     NAME_IN_URL = 'ret'
     NUM_ADDENDA = 3
     ADDENDUM_MAX_VALUE = 99
@@ -37,7 +37,7 @@ class C(BaseConstants):
     TRANSFER_AMOUNT = 60
     ALPHA_LOW = 0.7  # Low interference (less corruption)
     ALPHA_HIGH = 0.3  # High interference (more corruption)
-    SWITCH_ROUND = 3  # The round at which the treatment changes
+    SWITCH_ROUND = 10  # The round at which the treatment changes
 class Subsession(BaseSubsession):
     def creating_session(self):
         print(f"DEBUG: Starting creating_session for Round {self.round_number}")

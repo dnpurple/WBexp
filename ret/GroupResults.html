@@ -21,7 +21,7 @@
 
 <div style="text-align: center;">
     {% if is_authority %}
-        <p>Your salary is <strong>{{ salary }} ECUs</strong>.</p>
+        <p>You earned <strong>{{ salary }} ECUs from the addition task.</strong>.</p>
     {% else %}
         <p>You solved <strong>{{ player.num_solved }}</strong> problems correctly and earned <strong>{{ player.points_earned }} ECUs</strong>.</p>
     {% endif %}
