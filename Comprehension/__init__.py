@@ -133,7 +133,7 @@ class Comprehension(Page):
             0.7: dict(  # LOW interference (0.7)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(True, 'The likelihood of a successful report is 97%.'),
+                quiz_3=(97, 'The likelihood of a successful report is 97%.'),
                 quiz_4=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
@@ -143,7 +143,7 @@ class Comprehension(Page):
             0.3: dict(  # HIGH interference (0.3)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(True, 'The likelihood of a successful report is 97%.'),
+                quiz_3=(97, 'The likelihood of a successful report is 97%.'),
                 quiz_4=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
@@ -153,7 +153,7 @@ class Comprehension(Page):
             None: dict(  # Default (no interference)
                 quiz_1=(False, "The manager can only take up to 50% of a matched worker's earnings."),
                 quiz_2=(True, 'Workers can report the manager in their groups if the manager takes from a worker.'),
-                quiz_3=(True, 'The likelihood of a successful report is 97%.'),
+                quiz_3=(97, 'The likelihood of a successful report is 97%.'),
                 quiz_4=(False, 'The likelihood of a successful report cannot be changed.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
