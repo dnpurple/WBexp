@@ -66,7 +66,7 @@ class Player(BasePlayer):
     quiz_2 = models.BooleanField()
     quiz_2_wrong_attempts = models.IntegerField(initial=0)
 
-    quiz_3 = models.IntegerField()
+    quiz_3 = models.BooleanField()
     quiz_3_wrong_attempts = models.IntegerField(initial=0)
 
     quiz_4 = models.BooleanField()
