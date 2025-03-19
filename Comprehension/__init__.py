@@ -175,5 +175,14 @@ class Comprehension(Page):
 class EndComprehension(Page):
     pass
 
+class SyncWaitPage(WaitPage):
+    title_text = ""
+    body_text = "Please wait until all participants have arrived."
 
-page_sequence = [Instructions, Comprehension]
+    wait_for_all_groups = True  # Waits for all participants in the session
+
+
+    # No need for after_all_players_arrive; default behavior advances when all arrive
+
+
+page_sequence = [Instructions, Comprehension, SyncWaitPage]
