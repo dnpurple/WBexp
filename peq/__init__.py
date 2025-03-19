@@ -166,5 +166,16 @@ class Behavioral(Page):
 class Thankyou(Page):
     pass
 
+class SurveySyncWaitPage(WaitPage):
+    title_text = "Waiting for All Participants"
+    body_text = "Please wait until all participants have completed the survey."
 
-page_sequence = [Demographics, TIPI, Behavioral, Thankyou]
+    wait_for_all_groups = True
+
+page_sequence = [
+    Demographics,
+    TIPI,
+    Behavioral,
+    Thankyou,
+    SurveySyncWaitPage  # Moved wait page to end
+]
