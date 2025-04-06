@@ -60,15 +60,11 @@ def is_correct(addition: List[int], answer: int) -> bool:
 def live_ret_addition(player: Player, data: dict) -> dict:
     participant = player.participant
 
-    # MODULE - 9 - Exercise 4
-    group = player.group
-    if group.has_finished:
-        return
 
     if data['action'] == 'load':
         addition = participant.vars.setdefault('addition', get_addition(player))
 
-        # MODULE - 6 - Exercise 6 (RET)
+
         data = dict(
             addition=participant.vars['addition'],
             num_attempts=player.num_attempts,
@@ -78,18 +74,12 @@ def live_ret_addition(player: Player, data: dict) -> dict:
 
     else:
 
-        print(data['answer'])
-
-        # MODULE - 6 - Exercise 3 (RET)
         player.num_attempts += 1
 
-        # MODULE - 6 - Exercise 4 (RET)
         if is_correct(participant.vars['addition'], int(data['answer'])):
             player.num_solved += 1
 
-            # MODULE - 9 - Exercise 4
-            if player.num_solved == 4:
-                group.has_finished = True
+
 
         participant.vars['addition'] = get_addition(player)
 
@@ -99,15 +89,10 @@ def live_ret_addition(player: Player, data: dict) -> dict:
             num_attempts=player.num_attempts,
             num_solved=player.num_solved,
 
-            # MODULE - 9 - Exercise 4
-            has_finished=group.has_finished
         )
 
-        # MODULE - 9 - Exercise 4
-        if group.has_finished:
-            return {0: data}
-        else:
-            return {player.id_in_group: data}
+
+        return {player.id_in_group: data}
 
 
 class RETBaseline(Page):
@@ -125,8 +110,7 @@ class RETBaseline(Page):
     # MODULE 9 - Exercise 4
     @staticmethod
     def is_displayed(player: Player):
-        group = player.group
-        return not group.has_finished
+        return True
 
     # MODULE 7 - Exercise 4
     @staticmethod
