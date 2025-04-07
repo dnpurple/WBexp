@@ -13,7 +13,7 @@ class C(BaseConstants):
     NAME_IN_URL = 'wb_part_b'
     PLAYERS_PER_GROUP = 3
     NUM_ROUNDS = 20
-    NAME_IN_URL = 'ret'
+    #NAME_IN_URL = 'ret'
     NUM_ADDENDA = 3
     ADDENDUM_MAX_VALUE = 99
     MULTIPLIER = 5
@@ -24,7 +24,7 @@ class C(BaseConstants):
     QUIZ_CORRECT = ('1', '2', '3', '1')
     REPORT_PENALTY_PROBABILITIES = (0.97,)
     #TREATMENT_PROBABILITIES = (0.8,)
-    OFFER_CHOICES = (0,)
+    #OFFER_CHOICES = (0,)
     MAX_PERCENTAGE = 50
     MAX_PERCENTAGE_PLUS_ONE = MAX_PERCENTAGE + 1
     PERCENTAGE_CHOICES = list(range(0, MAX_PERCENTAGE + 1, 10))  # Percent choices from 0% to 50% in increments of 10
@@ -132,8 +132,8 @@ class Subsession(BaseSubsession):
 
 
 class Group(BaseGroup):
-    offer_accepted = models.BooleanField()
-    amount_offered = models.IntegerField(choices=C.OFFER_CHOICES)
+    #offer_accepted = models.BooleanField()
+    #amount_offered = models.IntegerField(choices=C.OFFER_CHOICES)
     authority_transfer_asked = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label='Do you want accept a transfer?', widget=widgets.RadioSelectHorizontal)
 
     victim_worker_id = models.IntegerField()  # Add a field to store the victim's ID
@@ -157,21 +157,21 @@ class Group(BaseGroup):
     wants_to_pay_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']],label ='',widget=widgets.RadioSelectHorizontal, initial=False)
 
     percentage_taken = models.IntegerField(blank=True)  # Allow blank if not taking
-    #transfer_amount = models.IntegerField(blank=True)  # Allow blank if not transferring
-    transfer_amount = models.IntegerField(
-        min=0,
-        blank=True,  # Set to True if transfer amount is optional
-        doc="Amount offered by the manager for the authority's acceptance."
-    )
+    transfer_amount = models.IntegerField(blank=True)  # Allow blank if not transferring
+    #transfer_amount = models.IntegerField(
+     #   min=0,
+      #  blank=True,  # Set to True if transfer amount is optional
+       # doc="Amount offered by the manager for the authority's acceptance."
+    #)
 
 
 class Player(BasePlayer):
     treatment_probability = models.FloatField()
     timeout_flag = models.BooleanField(initial=False)
-    group_result = models.IntegerField(initial=0)
+    #group_result = models.IntegerField(initial=0)
     num_attempts = models.IntegerField(initial=0)
     num_solved = models.IntegerField(initial=0)
-    my_field2 = models.IntegerField()
+    #my_field2 = models.IntegerField()
     q1 = models.IntegerField(choices=[[1, 'Yes'], [2, 'No']], label='1.  Do you play in groups?', widget=widgets.RadioSelect)
     q1_num_errors = models.IntegerField(initial=0)
     q2 = models.IntegerField(choices=[[1, 'yes'], [2, 'no']], label='Will your group members change?', widget=widgets.RadioSelect)
@@ -194,9 +194,9 @@ class Player(BasePlayer):
     #belief_earnings = models.IntegerField(initial=0)  # Earnings from belief elicitation
 
     report_reward = models.IntegerField(initial=0)
-    report_earnings = models.IntegerField(initial=0)  # Earnings from report/reward mechanics
-    manager_earnings = models.IntegerField(initial=0)  # Manager's custom earnings
-    authority_earnings = models.IntegerField(initial=0)  # Authority's custom earnings
+    #report_earnings = models.IntegerField(initial=0)  # Earnings from report/reward mechanics
+    #manager_earnings = models.IntegerField(initial=0)  # Manager's custom earnings
+    #authority_earnings = models.IntegerField(initial=0)  # Authority's custom earnings
     #belief_payoff = models.IntegerField(initial=0)
 
 
@@ -228,14 +228,15 @@ class Player(BasePlayer):
         return self.treatment_probability
 
     def get_role(self):
-        if self.id_in_group == 1:
-            return "Worker"
-        elif self.id_in_group == 2:
-            return "Manager"
-        elif self.id_in_group == 3:
-            return "Authority"
-        else:
-            return "Unknown Role"
+
+            if self.id_in_group == 1:
+                return "Worker"
+            elif self.id_in_group == 2:
+                return "Manager"
+            elif self.id_in_group == 3:
+                return "Authority"
+            else:
+                return "Unknown Role"
 
 
 def live_ret_addition(player: Player, data):
@@ -318,8 +319,9 @@ def set_payoffs(group: Group):
         victim_worker.in_group_match = False
 
     # Manager steals from explicitly paired worker
-    if group.wants_to_take and group.percentage_taken > 0:
-        amount_taken = int((group.percentage_taken / 100) * victim_worker.points_earned)
+    percentage_taken = group.field_maybe_none('percentage_taken') or 0
+    if group.wants_to_take and percentage_taken > 0:
+        amount_taken = int((percentage_taken / 100) * victim_worker.points_earned)
         manager.amount_stolen = amount_taken
         victim_worker.amount_lost = amount_taken
     else:
@@ -350,6 +352,7 @@ def set_payoffs(group: Group):
     # Worker reports based on thresholds
     worker_in_group.intended_to_report = (
         report_threshold < 51 and report_threshold <= group.percentage_taken
+
     )
 
     authority_accepted_transfer = group.field_maybe_none('authority_accepted_transfer') or False
@@ -471,17 +474,31 @@ class ManagerDecisionPage(Page):
     @staticmethod
     def vars_for_template(player: Player):
         group = player.group
+        round_number = player.round_number
+
         # Retrieve the paired worker for this manager
         paired_worker_id = player.participant.vars.get('paired_worker_id')
-        worker = get_player_by_participant_id(group, paired_worker_id) if paired_worker_id else None
-        print(f"DEBUG: Manager {player.id_in_group}, Paired Worker ID: {paired_worker_id}, Worker: {worker}")
+        victim_worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
+       # if victim_worker:
+        #    victim_points = victim_worker.points_earned
+        #else:
+         #   victim_points = 0
+        print(f"DEBUG: Victim worker points: {victim_worker.points_earned if victim_worker else 'No worker found'}")
+
+        #paired_worker_id = player.participant.vars.get('paired_worker_id')
+        #worker = get_player_by_participant_id(group, paired_worker_id) if paired_worker_id else None
+        #print(f"DEBUG: Manager {player.id_in_group}, Paired Worker ID: {paired_worker_id}, Worker: {worker}")
         #timeout_seconds = ManagerDecisionPage.get_timeout_seconds(player)
         player.set_treatment_probability()
 
         return {
-            'worker_id': paired_worker_id,
-            'worker_solved_problems': worker.num_solved if worker else 0,  # Fallback if worker is None
-            'worker_points_earned': worker.points_earned if worker else 0,  # Fallback if worker is None
+            'victim_worker': victim_worker,
+            'worker_points_earned': victim_worker.points_earned if victim_worker else 0,
+            'worker_solved_problems': victim_worker.num_solved if victim_worker else 0,
+            #'victim_points': victim_worker.points_earned if victim_worker else 0,
+           # 'worker_id': paired_worker_id,
+            #'worker_solved_problems': worker.num_solved if worker else 0,  # Fallback if worker is None
+            #'worker_points_earned': worker.points_earned if worker else 0,  # Fallback if worker is None
             'percentage_choices': C.PERCENTAGE_CHOICES,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
@@ -496,7 +513,7 @@ class ManagerDecisionPage(Page):
     def before_next_page(player: Player, timeout_happened):
         group = player.group
         paired_worker_id = player.participant.vars.get('paired_worker_id')
-        paired_worker = get_player_by_participant_id(group, paired_worker_id) if paired_worker_id else None
+        paired_worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
 
         # Handle timeout scenario
         if timeout_happened:
@@ -506,22 +523,27 @@ class ManagerDecisionPage(Page):
                 group.wants_to_pay_transfer = False
                 group.percentage_taken = 0
 
-        # Reset transfer_amount if the manager chooses not to pay a transfer
-        #if group.wants_to_pay_transfer == 'No':
-         #   group.transfer_amount = 0
+        # Ensure percentage_taken is never None
+        if group.field_maybe_none('percentage_taken') is None:
+            group.percentage_taken = 0
 
-        # Reset percentage_taken if the manager chooses not to take from the worker
-        #if group.wants_to_take == 'No':
-         #   group.percentage_taken = 0
+        #Reset transfer_amount if the manager chooses not to pay a transfer
+        if group.wants_to_pay_transfer == 'No':
+            group.transfer_amount = 0
+
+         #Reset percentage_taken if the manager chooses not to take from the worker
+        if group.wants_to_take == 'No':
+            group.percentage_taken = 0
 
             # Ensure transfer options are disabled if no theft
             if not group.wants_to_take:
                 group.wants_to_pay_transfer = False
                 group.percentage_taken = 0
             else:
-                percentage_taken = group.field_maybe_none('percentage_taken') or 0
-                if paired_worker and percentage_taken > 0:
-                    amount_taken = int((percentage_taken / 100) * paired_worker.points_earned)
+                if group.field_maybe_none('percentage_taken') is None:
+                    group.percentage_taken = 0
+                if paired_worker and group.percentage_taken > 0:
+                    amount_taken = int((group.percentage_taken / 100) * paired_worker.points_earned)
                     player.manager_take_earnings = player.points_earned + amount_taken
                     paired_worker.amount_lost = amount_taken
                 else:
@@ -742,7 +764,7 @@ class DecisionResults(Page):
         manager_payoff = int(player.payoff) if player.id_in_group == 2 else 'N/A'
         authority_payoff = int(player.payoff) if player.id_in_group == 3 else 'N/A'
         paired_worker_id = player.participant.vars.get('paired_worker_id')
-        worker = get_player_by_participant_id(group, paired_worker_id) if paired_worker_id else None
+        worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
         worker_solved_problems = worker.num_solved if worker else 0
         worker_earnings_ecu = worker.points_earned if worker else 0
 
@@ -903,6 +925,8 @@ def set_group_results(group: Group):
         print(f"DEBUG: Player {p.id_in_group}, Role: {p.get_role()}, Points Earned: {p.points_earned}")
         # No total_earnings update here; leave that to set_payoffs
         #p.total_earnings += p.points_earned
+
+
 class GroupResults(Page):
     form_model = 'player'
     timer_text = 'Time left:'

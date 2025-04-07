@@ -62,7 +62,29 @@
             }
         });
     });
+
+    function updateManagerEarnings() {
+        const workerPoints = {{ worker_points_earned }};
+        const percentageInput = document.querySelector('input[name="percentage_taken"]');
+        const earningsDisplay = document.getElementById('earnings-display');
+
+        percentageInput.addEventListener('input', function() {
+            let percentage = parseInt(this.value);
+            if (percentage >= 1 && percentage <= 50) {
+                let managerEarnings = Math.round((percentage / 100) * workerPoints);
+                earningsDisplay.textContent = `You will receive ${managerEarnings} ECUs (${percentage}% of ${workerPoints}).`;
+            } else {
+                earningsDisplay.textContent = "";
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "True");
+        updateManagerEarnings();
+    });
 </script>
+
 
 <style>
     input[type="number"] { width: 60px; text-align: center; }
@@ -108,7 +130,7 @@
     </div>
 </div>
 
-<p>You have been matched with a worker from one of 3 groups. The worker you are matched with solved <strong>{{ worker_solved_problems }}</strong> problems correctly and earned <strong>{{ worker_points_earned }}</strong> ECUs in the addition task.</p>
+<p>You have been matched with a worker from one of 3 groups. The worker you are matched with solved <strong>{{ worker_solved_problems  }}</strong> problems correctly and earned <strong>{{ worker_points_earned }}</strong> ECUs in the addition task.</p>
 
 <!-- Step 1: Do you want to take from the worker's earnings? -->
 <p>Do you want to take from the worker's earnings?</p>
@@ -125,6 +147,8 @@
         <label>Percentage Taken</label>
         <input type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
     </div>
+    <p id="earnings-display" style="font-weight: bold; color: green; margin-top: 10px;"></p>
+
     {{ formfield_errors 'percentage_taken' }}
     <br>
 
