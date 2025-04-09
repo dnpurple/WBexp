@@ -19,7 +19,7 @@ class C(BaseConstants):
         "What is the likelihood of a successful report?",
         "Can anything be done to change the likelihood of a successful report if no transfer is accepted?",
         "Will a worker receive a reward if their report is successful?",
-        "If a report is successful, is the matched worker reimbursed?",
+        "If a report is successful, is the worker that was taken from reimbursed?",
         "My firm will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
@@ -29,7 +29,7 @@ class C(BaseConstants):
         "What is the likelihood of a successful report if no transfer is accepted?",
         "Can anything be done to change the likelihood of a successful report?",
         "Will a worker receive a reward if their report is successful?",
-        "If a report is successful, is the matched worker reimbursed?",
+        "If a report is successful, is the worker that was taken from reimbursed?",
         "My firm will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
@@ -39,7 +39,7 @@ class C(BaseConstants):
         "What is the likelihood of a successful report if no transfer is accepted?",
         "Can anything be done to change the likelihood of a successful report?",
         "Will a worker receive a reward if their report is successful?",
-        "If a report is successful, is the matched worker reimbursed?",
+        "If a report is successful, is the worker that was taken from reimbursed?",
         "My firm will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
