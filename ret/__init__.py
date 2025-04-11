@@ -12,7 +12,7 @@ doc = 'real effort task'
 class C(BaseConstants):
     NAME_IN_URL = 'wb_part_b'
     PLAYERS_PER_GROUP = 3
-    NUM_ROUNDS = 10
+    NUM_ROUNDS = 20
     #NAME_IN_URL = 'ret'
     NUM_ADDENDA = 3
     ADDENDUM_MAX_VALUE = 99
@@ -30,14 +30,14 @@ class C(BaseConstants):
     PERCENTAGE_CHOICES = list(range(0, MAX_PERCENTAGE + 1, 10))  # Percent choices from 0% to 50% in increments of 10
 
     BONUS_PER_SOLVED_ADDITION = 100
-    WORKER_REPORT_REWARD = 50  # For example, worker gets 50 points if report succeeds
-    WORKER_REPORT_PENALTY = 20  # Worker loses 20 points if report fails
-    MANAGER_REPORT_PENALTY = 100  # Manager loses 100 points if report succeeds
+    WORKER_REPORT_REWARD = 200  # For example, worker gets 50 points if report succeeds
+    WORKER_REPORT_PENALTY = 100  # Worker loses 20 points if report fails
+    #MANAGER_REPORT_PENALTY = 100  # Manager loses 100 points if report succeeds
     INTERFERE_COST = 5
     TRANSFER_AMOUNT = 60
     ALPHA_LOW = 0.7  # Low interference (less corruption)
     ALPHA_HIGH = 0.3  # High interference (more corruption)
-    SWITCH_ROUND = 5  # The round at which the treatment changes
+    SWITCH_ROUND = 10  # The round at which the treatment changes
 class Subsession(BaseSubsession):
     def creating_session(self):
         print(f"DEBUG: Starting creating_session for Round {self.round_number}")

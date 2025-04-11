@@ -20,7 +20,7 @@ class C(BaseConstants):
         "Can anything be done to change the likelihood of a successful report if no transfer is accepted?",
         "Will a worker receive a reward if their report is successful?",
         "If a report is successful, is the worker that was taken from reimbursed?",
-        "My firm will change at some point in the experiment.",
+        "My group will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
     QUIZ_LABELS_LOW = [
@@ -30,7 +30,7 @@ class C(BaseConstants):
         "Can anything be done to change the likelihood of a successful report?",
         "Will a worker receive a reward if their report is successful?",
         "If a report is successful, is the worker that was taken from reimbursed?",
-        "My firm will change at some point in the experiment.",
+        "My group will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
     QUIZ_LABELS_HIGH = [
@@ -40,7 +40,7 @@ class C(BaseConstants):
         "Can anything be done to change the likelihood of a successful report?",
         "Will a worker receive a reward if their report is successful?",
         "If a report is successful, is the worker that was taken from reimbursed?",
-        "My firm will change at some point in the experiment.",
+        "My group will change at some point in the experiment.",
         "My role will change at some point in the experiment."
     ]
 
@@ -137,7 +137,7 @@ class Comprehension(Page):
                 quiz_4=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
+                quiz_7=(False, 'Groups remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
             0.3: dict(  # HIGH interference (0.3)
@@ -147,7 +147,7 @@ class Comprehension(Page):
                 quiz_4=(True, 'The likelihood of a successful report will fall if the authority accepts a transfer.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
+                quiz_7=(False, 'Groups remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
             None: dict(  # Default (no interference)
@@ -157,7 +157,7 @@ class Comprehension(Page):
                 quiz_4=(False, 'The likelihood of a successful report cannot be changed.'),
                 quiz_5=(True, 'Yes, the worker earns a reward for a successful report. They also receive a penalty if the report is unsuccessful.'),
                 quiz_6=(False, 'No, the matched worker is not reimbursed.'),
-                quiz_7=(False, 'Firms remain constant throughout the experiment.'),
+                quiz_7=(False, 'Groups remain constant throughout the experiment.'),
                 quiz_8=(False, 'Your role will remain the same throughout the experiment.')
             ),
         }
