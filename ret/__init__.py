@@ -366,16 +366,41 @@ def set_payoffs(group: Group):
     worker_in_group.report_successful = worker_in_group.worker_reported and worker_in_group.report_would_have_succeeded
 
     # Earnings clearly calculated
-    worker_in_group.report_reward = (
-        C.WORKER_REPORT_REWARD if worker_in_group.report_successful else
-        (-C.WORKER_REPORT_PENALTY if worker_in_group.worker_reported else 0)
-    )
+    # Worker pays penalty whenever they report
+    worker_in_group.report_reward = 0  # reset reward first
+    if worker_in_group.worker_reported:
+        worker_in_group.report_reward = -C.WORKER_REPORT_PENALTY
+
+        # add reward only if report is successful
+        if worker_in_group.report_successful:
+            worker_in_group.report_reward += C.WORKER_REPORT_REWARD
+
+
+    # Explicitly assign manager_take_earnings and effort_points
+    manager.manager_take_earnings = manager.amount_stolen
+    for player in group.get_players():
+        player.effort_points = player.points_earned
+
 
     # Set total earnings explicitly
-    manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
+
+    # Authority earnings (already correct)
     authority.total_earnings = authority.points_earned + authority.transfer_received
+
+    # Victim worker earnings (explicitly reduce by amount stolen)
     victim_worker.total_earnings = victim_worker.points_earned - victim_worker.amount_lost
-    worker_in_group.total_earnings = worker_in_group.points_earned + worker_in_group.report_reward
+
+    # If victim worker and reporting worker differ, set each one's payoff explicitly:
+    if worker_in_group != victim_worker:
+        worker_in_group.total_earnings = worker_in_group.points_earned + worker_in_group.report_reward
+    else:
+        # same worker both reported and stolen from
+        worker_in_group.total_earnings = worker_in_group.points_earned - worker_in_group.amount_lost + worker_in_group.report_reward
+    # Manager loses all earnings if reported successfully
+    if worker_in_group.report_successful:
+        manager.total_earnings = 0  # Manager forfeits all earnings if reported successfully
+    else:
+        manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
 
     # Explicitly set payoffs
     manager.payoff = manager.total_earnings

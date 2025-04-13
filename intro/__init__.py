@@ -126,20 +126,20 @@ class RETBaseline(Page):
 class PartAInstructions(Page):
     form_model = 'player'
 
-    timer_text = 'Time left:'
+    #timer_text = 'Time left:'
 
-    @staticmethod
-    def vars_for_template(player: Player):
+    #@staticmethod
+    #def vars_for_template(player: Player):
 
         # Return a dictionary with `timeout_seconds` at the top level
-        return {
-            'timeout_seconds': PartAInstructions.get_timeout_seconds(player)  # Ensure it’s at the top level
-        }
+     #   return {
+      #      'timeout_seconds': PartAInstructions.get_timeout_seconds(player)  # Ensure it’s at the top level
+       # }
 
-    @staticmethod
-    def get_timeout_seconds(player: Player):
-        if player.round_number == 1:
-            return 65  # Shorter timeout for other rounds
+   # @staticmethod
+    #def get_timeout_seconds(player: Player):
+     #   if player.round_number == 1:
+      #      return 95  # Shorter timeout for other rounds
 
     @staticmethod
     def is_displayed(player: Player):
