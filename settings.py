@@ -34,7 +34,7 @@ ROOMS = [
     ),
 dict(
         name='high_low_2',
-        display_name='Low to High 2',
+        display_name='High to Low 2',
         participant_label_file='_rooms/workstation.txt',
     ),
 dict(
