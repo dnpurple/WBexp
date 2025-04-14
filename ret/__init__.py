@@ -426,39 +426,16 @@ class ManagerDecisionPage(Page):
     def error_message(player, values):
         errors = {}
 
-        print(
-            f"DEBUG: Error Message Input - Wants to Take: {values.get('wants_to_take')}, Wants to Pay Transfer: {values.get('wants_to_pay_transfer')}, Percentage Taken: {values.get('percentage_taken')}")
+        print(f"DEBUG: Error Check Input - {values}")
 
-        # Check if the player selected "Yes" for `wants_to_take` and provided `percentage_taken`
-        if values['wants_to_take'] and (
-                values['percentage_taken'] is None or not (1 <= values['percentage_taken'] <= 50)):
-            errors['percentage_taken'] = "Please enter a percentage between 1 and 50."
+        if values['wants_to_take']:
+            if values['percentage_taken'] is None or not (1 <= values['percentage_taken'] <= 50):
+                errors['percentage_taken'] = "Please enter a percentage between 1 and 50."
+        else:
+            if values['wants_to_pay_transfer']:
+                errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking from the worker."
 
-        # Ensure transfer and percentage are only valid if taking
-        if not values['wants_to_take']:
-            values['wants_to_pay_transfer'] = False
-            values['percentage_taken'] = 0  # Default to 0 if not taking
-        elif not values['wants_to_take'] and values.get('wants_to_pay_transfer') is True:
-            errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you are not taking from the worker."
-        print(f"DEBUG: Error Message Output - Wants to Take: {values['wants_to_take']}, Wants to Pay Transfer: {values['wants_to_pay_transfer']}")
-        # Check if the player selected "Yes" for `wants_to_take` and provided `percentage_taken`
-        #if values['wants_to_take'] == 'Yes' and (
-         #       values['percentage_taken'] is None or not (1 <= values['percentage_taken'] <= 50)):
-          #  errors['percentage_taken'] = "Please enter a percentage between 1 and 50."
-
-            # Check if the player selected "Yes" for `wants_to_pay_transfer`, but only if they took
-           # if values['wants_to_take'] and values['wants_to_pay_transfer']:
-            #    pass  # No need to check transfer_amount since it's fixed
-
-            # If no theft, reset transfer options
-            #if not values['wants_to_take']:
-             #   values['wants_to_pay_transfer'] = False
-
-        # Check if the player selected "Yes" for `wants_to_pay_transfer` and provided `transfer_amount`
-        #if values['wants_to_pay_transfer'] == 'Yes' and (
-         #       values['transfer_amount'] is None or values['transfer_amount'] < 1):
-          #  errors[
-           #     'transfer_amount'] = f"Please specify a transfer amount of at least {player.group.interfere_cost} ECUs."
+        print(f"DEBUG: Error Check Output - {errors}")
 
         return errors if errors else None
 
@@ -507,46 +484,40 @@ class ManagerDecisionPage(Page):
     def before_next_page(player: Player, timeout_happened):
         group = player.group
         paired_worker_id = player.participant.vars.get('paired_worker_id')
-        paired_worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
+        paired_worker = get_player_by_participant_id(group, paired_worker_id,
+                                                     player.round_number) if paired_worker_id else None
 
-        # Handle timeout scenario
         if timeout_happened:
             player.timeout_flag = True
-            # On timeout, reset transfer and percentage if not taking
             if not group.wants_to_take:
                 group.wants_to_pay_transfer = False
                 group.percentage_taken = 0
 
-        # Ensure percentage_taken is never None
+        # Explicitly ensure percentage_taken is defined
         if group.field_maybe_none('percentage_taken') is None:
             group.percentage_taken = 0
 
-        #Reset transfer_amount if the manager chooses not to pay a transfer
-        if group.wants_to_pay_transfer == 'No':
-            group.transfer_amount = 0
-
-         #Reset percentage_taken if the manager chooses not to take from the worker
-        if group.wants_to_take == 'No':
+        # Ensure consistency: if the manager doesn't take, reset transfer and percentage
+        if not group.wants_to_take:
+            group.wants_to_pay_transfer = False
             group.percentage_taken = 0
-
-            # Ensure transfer options are disabled if no theft
-            if not group.wants_to_take:
-                group.wants_to_pay_transfer = False
-                group.percentage_taken = 0
+            player.manager_take_earnings = player.points_earned
+            if paired_worker:
+                paired_worker.amount_lost = 0
+        else:
+            # Manager wants to take; calculate amount stolen
+            if paired_worker and group.percentage_taken > 0:
+                amount_taken = int((group.percentage_taken / 100) * paired_worker.points_earned)
+                player.manager_take_earnings = player.points_earned + amount_taken
+                paired_worker.amount_lost = amount_taken
             else:
-                if group.field_maybe_none('percentage_taken') is None:
-                    group.percentage_taken = 0
-                if paired_worker and group.percentage_taken > 0:
-                    amount_taken = int((group.percentage_taken / 100) * paired_worker.points_earned)
-                    player.manager_take_earnings = player.points_earned + amount_taken
-                    paired_worker.amount_lost = amount_taken
-                else:
-                    player.manager_take_earnings = player.points_earned
-                    if paired_worker:
-                        paired_worker.amount_lost = 0
+                player.manager_take_earnings = player.points_earned
+                if paired_worker:
+                    paired_worker.amount_lost = 0
 
-            print(
-                f"DEBUG: Before Next Page Output - Wants to Take: {group.wants_to_take}, Wants to Pay Transfer: {group.wants_to_pay_transfer}")
+        # Debugging output for clarity
+        print(
+            f"DEBUG: Before Next Page - Wants to Take: {group.wants_to_take}, Wants to Pay Transfer: {group.wants_to_pay_transfer}, Percentage Taken: {group.percentage_taken}")
 
     @staticmethod
     def is_displayed(player: Player):
