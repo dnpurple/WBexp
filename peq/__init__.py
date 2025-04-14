@@ -103,7 +103,7 @@ class Player(BasePlayer):
     altruism_quantitative = models.IntegerField(
         min=0,
         max=C.DONATION_MAX,
-        label='Imagine the following situation: Today you unexpectedly received 1,600 U.S. dollars. How much of this amount would you donate to a good cause? (Values between 0 and 1,600 dollars are allowed)'
+        label='Imagine the following situation: Today you unexpectedly received $1,600. How much of this amount would you donate to a good cause? (Values between $0 and $1,600 are allowed)'
     )
 
 
