@@ -98,6 +98,10 @@ class Subsession(BaseSubsession):
                   f"(Group {manager.group.id_in_subsession}) paired with Worker {worker.participant.id} "
                   f"(Group {worker.group.id_in_subsession})")
 
+            # explicitly store these pairings in the group model fields
+            manager.group.victim_worker_id = worker.participant.id
+            worker.group.manager_id = manager.participant.id
+
         # Confirm assignments
         for player in players:
             print(f"DEBUG: Player {player.participant.id} vars: {player.participant.vars}")
@@ -134,9 +138,10 @@ class Subsession(BaseSubsession):
 class Group(BaseGroup):
     #offer_accepted = models.BooleanField()
     #amount_offered = models.IntegerField(choices=C.OFFER_CHOICES)
-    authority_transfer_asked = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label='Do you want accept a transfer?', widget=widgets.RadioSelectHorizontal)
+   # authority_transfer_asked = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label='Do you want accept a transfer?', widget=widgets.RadioSelectHorizontal)
 
     victim_worker_id = models.IntegerField()  # Add a field to store the victim's ID
+    manager_id = models.IntegerField()
     authority_accepted_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label ='',widget=widgets.RadioSelectHorizontal, initial=False)  # <-- Add this field
 
 
@@ -369,7 +374,7 @@ def set_payoffs(group: Group):
     # Worker pays penalty whenever they report
     worker_in_group.report_reward = 0  # reset reward first
     if worker_in_group.worker_reported:
-        worker_in_group.report_reward = -C.WORKER_REPORT_PENALTY
+        worker_in_group.report_reward -= C.WORKER_REPORT_PENALTY
 
         # add reward only if report is successful
         if worker_in_group.report_successful:
@@ -387,8 +392,7 @@ def set_payoffs(group: Group):
     # Authority earnings (already correct)
     authority.total_earnings = authority.points_earned + authority.transfer_received
 
-    # Victim worker earnings (explicitly reduce by amount stolen)
-    victim_worker.total_earnings = victim_worker.points_earned - victim_worker.amount_lost
+
 
     # If victim worker and reporting worker differ, set each one's payoff explicitly:
     if worker_in_group != victim_worker:
@@ -406,6 +410,8 @@ def set_payoffs(group: Group):
     manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
     worker_in_group.payoff = worker_in_group.total_earnings
+    # Victim worker earnings (explicitly reduce by amount stolen)
+    victim_worker.total_earnings = victim_worker.points_earned - victim_worker.amount_lost
     victim_worker.payoff = victim_worker.total_earnings
 
     # Debug statement (recommended for testing)
@@ -780,7 +786,7 @@ class DecisionResults(Page):
 
 
         # Authority transfer details
-        authority_transfer_asked = group.field_maybe_none('authority_transfer_asked')
+        #authority_transfer_asked = group.field_maybe_none('authority_transfer_asked')
         authority_accepted_transfer = group.field_maybe_none('authority_accepted_transfer')
 
         # Handle earnings display for each role

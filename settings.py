@@ -7,14 +7,14 @@ SESSION_CONFIGS = [
     dict(
         name='low_to_high',
         display_name='Low to High Interference',
-        num_demo_participants=3,
+        num_demo_participants=9,
         app_sequence=['intro', 'Comprehension',  'ret', 'crt', 'peq'],
         treatment_order="low_to_high",
     ),
     dict(
         name="high_to_low",
         display_name="High to Low Interference",
-        num_demo_participants=3,
+        num_demo_participants=9,
         app_sequence=['intro', 'Comprehension', 'ret', 'crt', 'peq'],
         treatment_order="high_to_low",
     ),

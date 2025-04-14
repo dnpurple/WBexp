@@ -115,16 +115,14 @@
     <p>Please click the Next button <strong>when you are ready</strong>  to take the comprehension quiz to start Part B. </p>
 </div>
 
-<!-- Next Button, initially disabled -->
-<div style="text-align: center; margin-top: 20px;">
-    <button id="nextButton" disabled>Next</button>
-</div>
-</div>
 
 </style>
 
+</div>
 <!-- Initially disable the Next button -->
-
+<div style="text-align: center;">
+    {{ next_button }}
+</div>
 <script>
 // Get the audio element and the Next button
 const audio = document.getElementById('instructionsAudio');
@@ -143,6 +141,9 @@ audio.addEventListener('error', function() {
     nextButton.disabled = false;
 });
 </script>
+
+
+
 {% endblock %}
 
 
