@@ -23,13 +23,23 @@ SESSION_CONFIGS = [
 
 ROOMS = [
     dict(
-        name='high_low',
-        display_name='High to Low',
+        name='high_low_1',
+        display_name='High to Low 1',
         participant_label_file='_rooms/workstation.txt',
     ),
     dict(
-        name='low_high',
-        display_name='Low to High',
+        name='low_high_1',
+        display_name='Low to High 1',
+        participant_label_file='_rooms/workstation.txt',
+    ),
+dict(
+        name='high_low_2',
+        display_name='Low to High 2',
+        participant_label_file='_rooms/workstation.txt',
+    ),
+dict(
+        name='low_high_2',
+        display_name='Low to High 2',
         participant_label_file='_rooms/workstation.txt',
     ),
 
