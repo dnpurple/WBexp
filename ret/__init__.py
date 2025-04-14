@@ -331,7 +331,7 @@ def set_payoffs(group: Group):
         worker.report_reward = C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY if report_successful else -C.WORKER_REPORT_PENALTY
 
         if report_successful:
-            manager.amount_stolen = 0  # Manager loses stolen amount if caught
+            #manager.amount_stolen = 0  # Manager loses stolen amount if caught
             manager.total_earnings = 0  # Manager loses everything if successfully reported
             manager.payoff = 0
 
@@ -361,6 +361,10 @@ def set_payoffs(group: Group):
     print(f"Worker ({worker.participant.id}) reported: {worker.worker_reported}, success: {worker.report_successful}, net reward: {worker.report_reward}")
     print(f"Authority ({authority.participant.id}) received transfer: {authority.transfer_received}.")
     print(f"Final earnings - Manager: ${manager.total_earnings:.2f}, Worker: ${worker.total_earnings:.2f}, Victim: ${victim_worker.total_earnings:.2f}, Authority: ${authority.total_earnings:.2f}.")
+
+    # Populate effort_points explicitly with points_earned
+    for player in group.get_players():
+        player.effort_points = player.points_earned
 
 
 class RET(Page):
@@ -440,6 +444,7 @@ class ManagerDecisionPage(Page):
             'timeout_seconds': ManagerDecisionPage.get_timeout_seconds(player),
             'can_offer_transfer': group.wants_to_take,  # Only allow transfer if taking
             'wants_to_take': group.wants_to_take,  # Pass current state for toggle logic
+            'points_earned': player.points_earned,
 
         }
 
@@ -565,6 +570,8 @@ class WorkerPage(Page):
             'worker_report_penalty': C.WORKER_REPORT_PENALTY,
             'random_start_self': random.randint(1, 51),
             'random_start_other': random.randint(1, 51),
+            'points_earned': player.points_earned,
+
         }
 
 
@@ -605,6 +612,8 @@ class AuthorityPage(Page):
             'interfere_cost': C.INTERFERE_COST,
             'transfer_amount': C.TRANSFER_AMOUNT,
             'timeout_seconds': AuthorityPage.get_timeout_seconds(player),  # Pass timer value to HTML
+            'points_earned': player.points_earned,
+
         }
 class ResultsWaitPage(WaitPage):
    after_all_players_arrive = set_payoffs
