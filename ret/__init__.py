@@ -329,19 +329,30 @@ def set_payoffs(group: Group):
         worker.worker_reported = True
         worker.report_successful = report_successful
         worker.report_reward = C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY if report_successful else -C.WORKER_REPORT_PENALTY
+
+        if report_successful:
+            manager.amount_stolen = 0  # Manager loses stolen amount if caught
+            manager.total_earnings = 0  # Manager loses everything if successfully reported
+            manager.payoff = 0
+
     else:
         worker.worker_reported = False
         worker.report_successful = False
         worker.report_reward = 0
 
+    # This is safe now because the manager totals are correctly recalculated above if a report succeeds
+    if not worker.report_successful:  # recalculate only if report not successful (otherwise zeroed above)
+        manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
+
     # Explicit and correct earnings calculation
     #victim_worker.total_earnings = victim_worker.points_earned - victim_worker.amount_lost
     worker.total_earnings = worker.points_earned + worker.report_reward - worker.amount_lost
-    manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
+    #manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
     authority.total_earnings = authority.points_earned + authority.transfer_received
 
+
     # Set payoffs explicitly and clearly
-    victim_worker.payoff = victim_worker.total_earnings
+    #victim_worker.payoff = victim_worker.total_earnings
     worker.payoff = worker.total_earnings
     manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
