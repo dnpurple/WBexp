@@ -303,88 +303,94 @@ def set_payoffs(group: Group):
     authority = group.get_player_by_id(3)
     worker_in_group = group.get_player_by_id(1)
 
-    # Retrieve paired_worker explicitly
-    paired_worker_id = manager.participant.vars.get('paired_worker_id')
-    paired_worker = None
-    for p in group.subsession.get_players():
-        if p.participant.id == paired_worker_id:
-            paired_worker = p
-            break
-
-    # Ensure paired_worker was found
-    if paired_worker is None:
-        raise ValueError(f"Paired worker not found for participant ID {paired_worker_id}")
-
-    # Set in_group_match clearly and explicitly
-    if paired_worker.group == manager.group:
-        manager.in_group_match = True
-        paired_worker.in_group_match = True
-    else:
-        manager.in_group_match = False
-        paired_worker.in_group_match = False
-
-    # Locate victim worker explicitly
-    victim_worker = None
+    # Fetch paired worker explicitly
     victim_participant_id = manager.participant.vars.get('paired_worker_id')
+    victim_worker = None
     for p in group.subsession.get_players():
         if p.participant.id == victim_participant_id:
             victim_worker = p
             break
 
     if victim_worker is None:
-        raise ValueError("Victim worker not found!")
+        raise ValueError(f"Victim_worker ID {victim_participant_id} not found!")
 
-        # Explicitly set in_group_match HERE:
-        manager.in_group_match = (victim_worker.group == manager.group)
-        victim_worker.in_group_match = (victim_worker.group == manager.group)
+    # Ensure in_group_match is set explicitly
+    in_group = (victim_worker.group == manager.group)
+    manager.in_group_match = in_group
+    victim_worker.in_group_match = in_group
 
-    percentage_taken = group.field_maybe_none('percentage_taken') or 0
-    amount_taken = int((group.percentage_taken / 100) * victim_worker.points_earned)
-    victim_worker.amount_lost = amount_taken
-    victim_worker.total_earnings = victim_worker.points_earned - amount_taken
-    victim_worker.payoff = victim_worker.total_earnings
+    # Calculate stolen amount
+    if group.wants_to_take and group.percentage_taken > 0:
+        amount_taken = int((group.percentage_taken / 100) * victim_worker.points_earned)
+    else:
+        amount_taken = 0
 
-    # Manager earns from stealing
     manager.amount_stolen = amount_taken
+    victim_worker.amount_lost = amount_taken
 
-    # Reporting logic clearly and explicitly defined
-    is_victim = (worker_in_group.participant.id == victim_participant_id)
-    report_threshold = group.min_report_percentage_self if is_victim else group.min_report_percentage_other_worker
-    worker_in_group.intended_to_report = report_threshold <= percentage_taken
-
+    # Authority accepts transfer logic
     authority_accepted_transfer = group.field_maybe_none('authority_accepted_transfer') or False
-    worker_in_group.report_would_have_succeeded = (
-        worker_in_group.intended_to_report and random.uniform(0, 1) <
-        (worker_in_group.treatment_probability if authority_accepted_transfer else C.REPORT_PENALTY_PROBABILITIES[0])
+
+    if group.wants_to_take and group.wants_to_pay_transfer and authority_accepted_transfer:
+        authority.transfer_received = C.TRANSFER_AMOUNT - C.INTERFERE_COST
+        manager.transfer_paid = C.TRANSFER_AMOUNT
+    else:
+        authority.transfer_received = 0
+        manager.transfer_paid = 0
+
+    # Worker report logic: worker_in_group always reports (your existing design)
+    is_victim = (worker_in_group.participant.id == victim_participant_id)
+    report_threshold = (
+        group.min_report_percentage_self if is_victim else group.min_report_percentage_other_worker
+    )
+
+    worker_in_group.intended_to_report = (
+        report_threshold < 51 and report_threshold <= group.percentage_taken
     )
 
     worker_in_group.worker_reported = worker_in_group.intended_to_report
+
+    # Report success logic (as existing):
+    worker_in_group.report_would_have_succeeded = (
+        worker_in_group.worker_reported and random.uniform(0, 1) < (
+            worker_in_group.treatment_probability if authority_accepted_transfer else C.REPORT_PENALTY_PROBABILITIES[0]
+        )
+    )
     worker_in_group.report_successful = worker_in_group.worker_reported and worker_in_group.report_would_have_succeeded
 
-    # Explicit handling of penalty and reward (fixed logic)
-    if worker_in_group.worker_reported:
-        if worker_in_group.report_successful:
-            worker_in_group.report_reward = C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY
-        else:
-            worker_in_group.report_reward = -C.WORKER_REPORT_PENALTY
-    else:
-        worker_in_group.report_reward = 0
+    # Assign penalty/reward explicitly to the CORRECT worker:
+    reporting_worker = worker_in_group  # the worker who always makes the report
+    reporting_worker.report_reward = (
+        C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY if reporting_worker.report_successful
+        else -C.WORKER_REPORT_PENALTY if reporting_worker.worker_reported else 0
+    )
 
-    # Worker earnings explicitly calculated
-    worker_in_group.total_earnings = worker_in_group.points_earned + worker_in_group.report_reward
-    if victim_worker == worker_in_group:
-        worker_in_group.total_earnings -= worker_in_group.amount_lost
+    # Update total earnings explicitly and correctly:
+    manager.total_earnings = (
+        0 if reporting_worker.report_successful else manager.points_earned + amount_taken - manager.transfer_paid
+    )
 
-    worker_in_group.payoff = worker_in_group.total_earnings
-
-    # Manager loses everything if reported successfully
-    manager.total_earnings = 0 if worker_in_group.report_successful else (manager.points_earned + manager.amount_stolen)
-    manager.payoff = manager.total_earnings
-
-    # Authority payoff explicitly handled (unchanged logic)
-    authority.transfer_received = (C.TRANSFER_AMOUNT - C.INTERFERE_COST) if (group.wants_to_pay_transfer and authority_accepted_transfer) else 0
     authority.total_earnings = authority.points_earned + authority.transfer_received
+
+    # Victim worker explicitly loses the stolen amount:
+    victim_worker.total_earnings = victim_worker.points_earned - amount_taken
+
+    # Reporting worker gets the reward/penalty applied explicitly:
+    if reporting_worker == victim_worker:
+        reporting_worker.total_earnings = victim_worker.total_earnings + reporting_worker.report_reward
+    else:
+        reporting_worker.total_earnings = reporting_worker.points_earned + reporting_worker.report_reward
+
+    # Explicitly set payoffs:
+    manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
+    victim_worker.payoff = victim_worker.total_earnings
+    reporting_worker.payoff = reporting_worker.total_earnings
+
+    # If reporting_worker is not victim_worker, both payoffs have been set correctly above.
+
+    print(f"DEBUG: Manager ({manager.participant.id}) stole {manager.amount_stolen} from Worker ({victim_worker.participant.id})")
+
 
     # At end, explicitly set effort_points
     for p in group.get_players():
