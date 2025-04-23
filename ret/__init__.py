@@ -38,16 +38,16 @@ class C(BaseConstants):
     ALPHA_LOW = 0.7  # Low interference (less corruption)
     ALPHA_HIGH = 0.3  # High interference (more corruption)
     SWITCH_ROUND = 10  # The round at which the treatment changes
+
+
 class Subsession(BaseSubsession):
     def creating_session(self):
-        print(f"DEBUG: Starting creating_session for Round {self.round_number}")
+
         for player in self.get_players():
             player.set_treatment_probability()
-            print(
-                f"DEBUG: Round {self.round_number}, Player {player.id_in_group}, Treatment Probability: {player.treatment_probability}")
+
         if self.round_number == 1:
             self.initialize_group_structure()
-        print(f"DEBUG: Finished creating_session for Round {self.round_number}")
 
 
     def initialize_group_structure(self):
@@ -58,43 +58,49 @@ class Subsession(BaseSubsession):
             group_matrix = [players[i:i + C.PLAYERS_PER_GROUP] for i in range(0, len(players), C.PLAYERS_PER_GROUP)]
             self.set_group_matrix(group_matrix)
 
-            print(f"DEBUG: Group matrix: {self.get_group_matrix()}")
 
 
 
-            for player in self.get_players():
-                print(
-                    f"DEBUG: Player {player.id_in_group}, Participant ID: {player.participant.id}, Role: {player.get_role()}")
 
-    def pair_managers_with_workers(subsession):
+         #   for player in self.get_players():
+          #      print(
+           #         f"DEBUG: Player {player.id_in_group}, Participant ID: {player.participant.id}, Role: {player.get_role()}")
+
+
+
+
+    def pair_managers_with_workers(cls, subsession):
         players = subsession.get_players()
         managers = [p for p in players if p.get_role() == 'Manager']
         workers = [p for p in players if p.get_role() == 'Worker']
 
-        random.shuffle(workers)
-        pairs = list(zip(managers, workers))
+        if len(managers) != len(workers):
+            raise ValueError("Mismatch in number of managers and workers!")
 
+        random.shuffle(workers)
+        pairs = zip(managers, workers)
+
+        # Clear previous pairings
+        for p in players:
+            p.participant.vars.pop('paired_worker_id', None)
+            p.participant.vars.pop('paired_manager_id', None)
+
+        # Set new pairings explicitly
         for manager, worker in pairs:
             manager.participant.vars['paired_worker_id'] = worker.participant.id
             worker.participant.vars['paired_manager_id'] = manager.participant.id
+            group = manager.group
+            group.victim_worker_id = worker.participant.id
+            group.manager_id = manager.participant.id
 
-            # Explicitly save IDs clearly in group for verification
-            manager.group.victim_worker_id = worker.participant.id
-            manager.group.manager_id = manager.participant.id
-            worker.group.victim_worker_id = worker.participant.id
-            worker.group.manager_id = manager.participant.id
-
-            print(f"DEBUG: Manager {manager.participant.id} paired with Worker {worker.participant.id}")
-
-            # Set default group fields and participant vars clearly at the end of this function
-            for group in subsession.get_groups():
-                group.wants_to_take = True
-                group.wants_to_pay_transfer = False
-                for player in group.get_players():
-                    participant = player.participant
-                    participant.selected_round = None
-                    participant.selected_round_earnings = 0
-
+        # Reset defaults clearly
+        for group in subsession.get_groups():
+            group.wants_to_take = True
+            group.wants_to_pay_transfer = False
+            for player in group.get_players():
+                participant = player.participant
+                participant.vars['selected_round'] = None
+                participant.vars['selected_round_earnings'] = 0
 
     def set_random_round_payment(self):
         import random
@@ -208,9 +214,7 @@ class Player(BasePlayer):
             self.treatment_probability = C.ALPHA_LOW if self.round_number <= C.SWITCH_ROUND else C.ALPHA_HIGH
         else:  # high_to_low
             self.treatment_probability = C.ALPHA_HIGH if self.round_number <= C.SWITCH_ROUND else C.ALPHA_LOW
-        print(
-            f"DEBUG: Player {self.id_in_group}, Round {self.round_number}, Set Treatment Probability: {self.treatment_probability}")
-        return self.treatment_probability
+            return self.treatment_probability
 
     def get_role(self):
 
@@ -357,11 +361,6 @@ def set_payoffs(group: Group):
     manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
 
-    print(f"Manager ({manager.participant.id}) stole {manager.amount_stolen} from Worker ({victim_worker.participant.id}).")
-    print(f"Worker ({worker.participant.id}) reported: {worker.worker_reported}, success: {worker.report_successful}, net reward: {worker.report_reward}")
-    print(f"Authority ({authority.participant.id}) received transfer: {authority.transfer_received}.")
-    print(f"Final earnings - Manager: ${manager.total_earnings:.2f}, Worker: ${worker.total_earnings:.2f}, Victim: ${victim_worker.total_earnings:.2f}, Authority: ${authority.total_earnings:.2f}.")
-
     # Populate effort_points explicitly with points_earned
     for player in group.get_players():
         player.effort_points = player.points_earned
@@ -393,7 +392,7 @@ class ManagerDecisionPage(Page):
     def error_message(player, values):
         errors = {}
 
-        print(f"DEBUG: Error Check Input - {values}")
+
 
         if values['wants_to_take']:
             if values['percentage_taken'] is None or not (1 <= values['percentage_taken'] <= 50):
@@ -402,7 +401,7 @@ class ManagerDecisionPage(Page):
             if values['wants_to_pay_transfer']:
                 errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking from the worker."
 
-        print(f"DEBUG: Error Check Output - {errors}")
+
 
         return errors if errors else None
 
@@ -417,26 +416,13 @@ class ManagerDecisionPage(Page):
         # Retrieve the paired worker for this manager
         paired_worker_id = player.participant.vars.get('paired_worker_id')
         victim_worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
-       # if victim_worker:
-        #    victim_points = victim_worker.points_earned
-        #else:
-         #   victim_points = 0
-        print(f"DEBUG: Victim worker points: {victim_worker.points_earned if victim_worker else 'No worker found'}")
 
-        #paired_worker_id = player.participant.vars.get('paired_worker_id')
-        #worker = get_player_by_participant_id(group, paired_worker_id) if paired_worker_id else None
-        #print(f"DEBUG: Manager {player.id_in_group}, Paired Worker ID: {paired_worker_id}, Worker: {worker}")
-        #timeout_seconds = ManagerDecisionPage.get_timeout_seconds(player)
         player.set_treatment_probability()
 
         return {
             'victim_worker': victim_worker,
             'worker_points_earned': victim_worker.points_earned if victim_worker else 0,
             'worker_solved_problems': victim_worker.num_solved if victim_worker else 0,
-            #'victim_points': victim_worker.points_earned if victim_worker else 0,
-           # 'worker_id': paired_worker_id,
-            #'worker_solved_problems': worker.num_solved if worker else 0,  # Fallback if worker is None
-            #'worker_points_earned': worker.points_earned if worker else 0,  # Fallback if worker is None
             'percentage_choices': C.PERCENTAGE_CHOICES,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
@@ -483,22 +469,11 @@ class ManagerDecisionPage(Page):
                 if paired_worker:
                     paired_worker.amount_lost = 0
 
-        # Debugging output for clarity
-        print(
-            f"DEBUG: Before Next Page - Wants to Take: {group.wants_to_take}, Wants to Pay Transfer: {group.wants_to_pay_transfer}, Percentage Taken: {group.percentage_taken}")
 
     @staticmethod
     def is_displayed(player: Player):
         return player.id_in_group == 2  # Only for the Manager
 
-    #@staticmethod
-    #def get_timeout_seconds(player: Player):
-     #   return 120  # Adjust the time limit as needed
-
-    #@staticmethod
-    #def before_next_page(player: Player, timeout_happened):
-        # Store timeout status to prompt user in template if they timed out
-     #   player.participant.vars['worker_page_timeout'] = timeout_happened
 
 
 class WorkerPage(Page):
@@ -507,20 +482,10 @@ class WorkerPage(Page):
     form_fields = ['min_report_percentage_other_worker', 'min_report_percentage_self']
     timer_text = 'Time left:'
 
-    # Define timeout as a class variable, and use it directly in `vars_for_template`
-   # timeout_seconds = 120  # Adjust this time limit as needed
-
     @staticmethod
     def get_timeout_seconds(player: Player):
         return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
 
-
-    #def get_timeout_seconds(player: Player):
-        # Setting different timers based on the round or conditions
-     #   if player.round_number == 1:
-      #      return 1200  # Longer timer for the first round
-       # else:
-        #    return 800  # Shorter timer for other rounds
 
     @staticmethod
     def is_displayed(player: Player):
@@ -595,7 +560,7 @@ class AuthorityPage(Page):
         if timeout_happened:
             player.timeout_flag = True  # Handle any server-side timeout logic here
             group.authority_accepted_transfer = None
-            print(f"DEBUG: Authority {player.id_in_group} timed out, default set")
+
 
     @staticmethod
     def error_message(player, values):
@@ -859,9 +824,6 @@ def set_group_results(group: Group):
             p.points_earned = C.ENDOWMENT  # Authority gets only salary
         else:
             p.points_earned = p.num_solved * C.BONUS_PER_SOLVED_ADDITION  # Workers and Managers get RET earnings
-        print(f"DEBUG: Player {p.id_in_group}, Role: {p.get_role()}, Points Earned: {p.points_earned}")
-        # No total_earnings update here; leave that to set_payoffs
-        #p.total_earnings += p.points_earned
 
 
 class GroupResults(Page):
@@ -913,7 +875,7 @@ class BeforeDecisionsWaitPage(WaitPage):
 
     def after_all_players_arrive(self):
         # Re-pair managers and workers each round
-        self.subsession.pair_managers_with_workers()
+        self.subsession.pair_managers_with_workers(self.subsession)
 
 
 
@@ -1008,11 +970,11 @@ class DecisionResultsWait(WaitPage):
     title_text = " "
     body_text = "Please wait while other participants are making their decisions."
 
-class NextRound(WaitPage):
-    after_all_players_arrive = set_payoffs
+#class NextRound(WaitPage):
+ #   after_all_players_arrive = set_payoffs
 
-    title_text = " "
-    body_text = "Please wait until the experiment continues."
+  #  title_text = " "
+   # body_text = "Please wait until the experiment continues."
 
 
-page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults,BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults, NextRound, TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults,BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
