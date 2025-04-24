@@ -1,5 +1,15 @@
 from os import environ
 
+import os
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [os.environ.get('REDIS_URL')],
+        },
+    },
+}
+
 SESSION_CONFIG_DEFAULTS = dict(real_world_currency_per_point=1, participation_fee=5)
 
 
