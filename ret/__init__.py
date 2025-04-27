@@ -826,7 +826,7 @@ def set_group_results(group: Group):
             p.points_earned = p.num_solved * C.BONUS_PER_SOLVED_ADDITION  # Workers and Managers get RET earnings
 
 
-class GroupResults(Page):
+class RETResults(Page):
     form_model = 'player'
     timer_text = 'Time left:'
 
@@ -834,20 +834,17 @@ class GroupResults(Page):
     def vars_for_template(player: Player):
         group = player.group
         # Gather performance and roles of all players in the group
-        group_performance = [
-            {
-                'id': p.id_in_group,
-                'role': p.get_role(),
-                'num_solved': p.num_solved,
-                'points_earned': p.points_earned  # Display RET earnings (with ENDOWMENT for authority)
-            }
-            for p in group.get_players()
-        ]
+        player_performance = {
+            'id': player.id_in_group,
+            'role': player.get_role(),
+            'num_solved': player.num_solved,
+            'points_earned': player.points_earned
+        }
 
         # Return a dictionary with `timeout_seconds` at the top level
         return {
-            'group_performance': group_performance,
-            'timeout_seconds': GroupResults.get_timeout_seconds(player),  # Ensure it’s at the top level
+            'player_performance': player_performance,
+            'timeout_seconds': RETResults.get_timeout_seconds(player),  # Ensure it’s at the top level
             'is_authority': player.id_in_group == 3,
             'salary': C.ENDOWMENT,
         }
@@ -977,4 +974,4 @@ class DecisionResultsWait(WaitPage):
    # body_text = "Please wait until the experiment continues."
 
 
-page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+page_sequence = [YourRoleIs, RET, RETResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
