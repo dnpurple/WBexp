@@ -977,4 +977,4 @@ class DecisionResultsWait(WaitPage):
    # body_text = "Please wait until the experiment continues."
 
 
-page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults,BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+page_sequence = [YourRoleIs, RET, WaitingFeedback, GroupResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
