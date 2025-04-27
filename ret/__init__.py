@@ -810,12 +810,6 @@ class RandomRoundPayment(Page):
 
 
 
-class WaitingFeedback(WaitPage):
-    after_all_players_arrive = 'set_group_results'  # Set results after all players arrive
-
-    title_text = " "
-
-    body_text = "Please wait while other participants are making their decisions."
 
 def set_group_results(group: Group):
     # Calculate RET task points for all players and store them in points_earned
@@ -832,8 +826,12 @@ class RETResults(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
-        group = player.group
-        # Gather performance and roles of all players in the group
+        # Calculate payoff individually without needing the whole group
+        if player.id_in_group == 3:
+            player.points_earned = C.ENDOWMENT
+        else:
+            player.points_earned = player.num_solved * C.BONUS_PER_SOLVED_ADDITION
+
         player_performance = {
             'id': player.id_in_group,
             'role': player.get_role(),
@@ -850,10 +848,7 @@ class RETResults(Page):
         }
     @staticmethod
     def get_timeout_seconds(player: Player):
-        if player.round_number == 1:
-            return 30  # Set a longer timeout for the first round if desired
-        else:
-            return 20  # Shorter timeout for other rounds
+        return 30 if player.round_number == 1 else 20
 
     def is_displayed(player: Player):
         return True  # Display for all players before they make decisions
@@ -861,7 +856,7 @@ class RETResults(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        pass
+        player.payoff = player.points_earned  # Ensure payoff is stored properly
 
 class BeforeDecisionsWaitPage(WaitPage):
     wait_for_all_groups = True  # Ensures all players from all groups arrive
