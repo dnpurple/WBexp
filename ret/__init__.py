@@ -86,6 +86,11 @@ class Subsession(BaseSubsession):
             p.participant.vars.pop('paired_worker_id', None)
             p.participant.vars.pop('paired_manager_id', None)
 
+            #to identify the pairs when doing analysis
+            p.pair_id = ''  # Clear pair_id
+            p.external_worker_code = ''  # Clear external_worker_code
+            p.external_manager_code = ''  # Clear external_manager_code
+
         # Set new pairings explicitly
         for manager, worker in pairs:
             manager.participant.vars['paired_worker_id'] = worker.participant.id
@@ -93,6 +98,19 @@ class Subsession(BaseSubsession):
             group = manager.group
             group.victim_worker_id = worker.participant.id
             group.manager_id = manager.participant.id
+
+            # New: Set unique pair_id using sorted participant codes
+            sorted_codes = sorted([manager.participant.code, worker.participant.code])
+            pair_id_str = '-'.join(sorted_codes)
+            manager.pair_id = pair_id_str
+            worker.pair_id = pair_id_str
+
+            #Also new: Set external_worker_code for manager and external_manager_code for worker
+            manager.external_worker_code = worker.participant.code
+            worker.external_manager_code = manager.participant.code
+
+            #for debugginf purposes
+            print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, pair_id = {pair_id_str}")
 
         # Reset defaults clearly
         for group in subsession.get_groups():
@@ -208,6 +226,10 @@ class Player(BasePlayer):
         initial=False,
         doc="Whether manager was matched with the worker from their own group"
     )
+
+    pair_id = models.StringField(blank=True, initial='')  # Unique ID for the matched pair per round
+    external_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker paired with this manager")
+    external_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager paired with this worker")
 
     def set_treatment_probability(self):
         treatment_order = self.session.config.get("treatment_order", "low_to_high")
@@ -437,6 +459,7 @@ class ManagerDecisionPage(Page):
             'points_earned': player.points_earned,
             'treatment_percentage': treatment_percentage,
             'penalty_percentage': C.PENALTY_PERCENTAGE,
+            'external_worker_code': player.external_worker_code,  # Add for debugging
 
         }
 
@@ -551,7 +574,7 @@ class WorkerPage(Page):
             'random_start_other': random.randint(1, 51),
             'points_earned': player.points_earned,
             'penalty_percentage': C.PENALTY_PERCENTAGE,
-
+            'external_manager_code': player.external_manager_code,  # Add for debugging
         }
 
 
