@@ -538,7 +538,7 @@ class WorkerPage(Page):
             'total_rounds': C.NUM_ROUNDS,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
-            'penalty_percentage': c.PENALTY_PERCENTAGE,
+            'penalty_percentage': C.PENALTY_PERCENTAGE,
             'treatment_percentage': treatment_percentage,
             'worker_report_reward': C.WORKER_REPORT_REWARD,
             'worker_report_penalty': C.WORKER_REPORT_PENALTY,
