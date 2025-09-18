@@ -23,7 +23,7 @@ class C(BaseConstants):
     QUIZ_FIELDS = ('q1', 'q2', 'q3', 'q4')
     QUIZ_CORRECT = ('1', '2', '3', '1')
     REPORT_PENALTY_PROBABILITIES = (0.97,)
-    PENALTY_PERCENTAGE = (97,)
+    PENALTY_PERCENTAGE = 97
     #TREATMENT_PROBABILITIES = (0.8,)
     #OFFER_CHOICES = (0,)
     MAX_PERCENTAGE = 50
