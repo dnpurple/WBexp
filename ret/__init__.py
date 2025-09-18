@@ -23,6 +23,7 @@ class C(BaseConstants):
     QUIZ_FIELDS = ('q1', 'q2', 'q3', 'q4')
     QUIZ_CORRECT = ('1', '2', '3', '1')
     REPORT_PENALTY_PROBABILITIES = (0.97,)
+    PENALTY_PERCENTAGE = (97,)
     #TREATMENT_PROBABILITIES = (0.8,)
     #OFFER_CHOICES = (0,)
     MAX_PERCENTAGE = 50
@@ -537,7 +538,7 @@ class WorkerPage(Page):
             'total_rounds': C.NUM_ROUNDS,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
-            'penalty_percentage': penalty_percentage,
+            'penalty_percentage': c.PENALTY_PERCENTAGE,
             'treatment_percentage': treatment_percentage,
             'worker_report_reward': C.WORKER_REPORT_REWARD,
             'worker_report_penalty': C.WORKER_REPORT_PENALTY,
