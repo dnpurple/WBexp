@@ -520,7 +520,8 @@ class WorkerPage(Page):
 
         treatment_percentage = int(float(player.treatment_probability) * 100) if player.treatment_probability is not None else 0
         print(f"Player {player.id_in_group}: treatment_probability = {player.treatment_probability}, type = {type(player.treatment_probability)}")
-
+        penalty_percentage = int(float(C.REPORT_PENALTY_PROBABILITIES) * 100) 
+        
         return {
             'timeout_seconds': WorkerPage.get_timeout_seconds(player),
             'timeout_seconds_ms': WorkerPage.get_timeout_seconds(player) * 1000,  # Pass milliseconds for JavaScript
@@ -536,6 +537,7 @@ class WorkerPage(Page):
             'total_rounds': C.NUM_ROUNDS,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
+            'penalty_percentage': penalty_percentage,
             'treatment_percentage': treatment_percentage,
             'worker_report_reward': C.WORKER_REPORT_REWARD,
             'worker_report_penalty': C.WORKER_REPORT_PENALTY,
