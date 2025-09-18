@@ -435,6 +435,7 @@ class ManagerDecisionPage(Page):
             'can_offer_transfer': group.wants_to_take,  # Only allow transfer if taking
             'wants_to_take': group.wants_to_take,  # Pass current state for toggle logic
             'points_earned': player.points_earned,
+            'treatment_percentage': treatment_percentage,
 
         }
 
@@ -593,6 +594,7 @@ class AuthorityPage(Page):
             'transfer_amount': C.TRANSFER_AMOUNT,
             'timeout_seconds': AuthorityPage.get_timeout_seconds(player),  # Pass timer value to HTML
             'points_earned': player.points_earned,
+            'treatment_percentage': treatment_percentage,
 
         }
 class ResultsWaitPage(WaitPage):
