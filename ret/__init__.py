@@ -516,6 +516,11 @@ class WorkerPage(Page):
         tick_width = 100 / len(slider_ticks)  # Calculate width percentage for each tick
         player.set_treatment_probability()
 
+        #my attempt at making the probabilities as percentages
+
+        treatment_percentage = int(float(player.treatment_probability) * 100) if player.treatment_probability is not None else 0
+        print(f"Player {player.id_in_group}: treatment_probability = {player.treatment_probability}, type = {type(player.treatment_probability)}")
+
         return {
             'timeout_seconds': WorkerPage.get_timeout_seconds(player),
             'timeout_seconds_ms': WorkerPage.get_timeout_seconds(player) * 1000,  # Pass milliseconds for JavaScript
@@ -531,6 +536,7 @@ class WorkerPage(Page):
             'total_rounds': C.NUM_ROUNDS,
             'report_penalty_probabilities': C.REPORT_PENALTY_PROBABILITIES[0],
             'treatment_probability': player.treatment_probability,
+            'treatment_percentage': treatment_percentage,
             'worker_report_reward': C.WORKER_REPORT_REWARD,
             'worker_report_penalty': C.WORKER_REPORT_PENALTY,
             'random_start_self': random.randint(1, 51),
