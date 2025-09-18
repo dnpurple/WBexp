@@ -418,6 +418,9 @@ class ManagerDecisionPage(Page):
         paired_worker_id = player.participant.vars.get('paired_worker_id')
         victim_worker = get_player_by_participant_id(group, paired_worker_id, player.round_number) if paired_worker_id else None
 
+        treatment_percentage = int(float(player.treatment_probability) * 100) if player.treatment_probability is not None else 0
+        print(f"Player {player.id_in_group}: treatment_probability = {player.treatment_probability}, type = {type(player.treatment_probability)}")
+
         player.set_treatment_probability()
 
         return {
@@ -545,6 +548,7 @@ class WorkerPage(Page):
             'random_start_self': random.randint(1, 51),
             'random_start_other': random.randint(1, 51),
             'points_earned': player.points_earned,
+            'penalty_percentage': C.PENALTY_PERCENTAGE,
 
         }
 
@@ -580,6 +584,8 @@ class AuthorityPage(Page):
     def vars_for_template(player: Player):
         group = player.group
         player.set_treatment_probability()
+        treatment_percentage = int(float(player.treatment_probability) * 100) if player.treatment_probability is not None else 0
+        print(f"Player {player.id_in_group}: treatment_probability = {player.treatment_probability}, type = {type(player.treatment_probability)}")
 
         return {
             'treatment_probability': player.treatment_probability,
