@@ -50,6 +50,9 @@ class Subsession(BaseSubsession):
         if self.round_number == 1:
             self.initialize_group_structure()
 
+        # ALWAYS copy internal codes into this round's Player rows for the export:
+        self._copy_internal_codes_every_round()
+
 
     def initialize_group_structure(self):
         if self.round_number == 1:
@@ -91,7 +94,8 @@ class Subsession(BaseSubsession):
 
 
 
-    def pair_managers_with_workers(cls, subsession):
+    #def pair_managers_with_workers(cls, subsession):
+    def pair_managers_with_workers(self):        
         players = subsession.get_players()
         managers = [p for p in players if p.get_role() == 'Manager']
         workers = [p for p in players if p.get_role() == 'Worker']
@@ -159,6 +163,43 @@ class Subsession(BaseSubsession):
 
             # Assign the earnings to participant payoff for final display
             participant.payoff = participant.vars['selected_round_earnings']
+
+    def _assign_internal_codes_round1(self):
+        """
+        Called only in round 1 after the group matrix is set.
+        Saves internal codes both on this round's Player rows and in participant.vars
+        so we can copy them to every subsequent round.
+        """
+        for g in self.get_groups():
+            # Roles by id_in_group: 1=Worker, 2=Manager, 3=Authority
+            w = g.get_player_by_id(1)
+            m = g.get_player_by_id(2)
+    
+            w_code = w.participant.code
+            m_code = m.participant.code
+    
+            for p in g.get_players():
+                # Persist for all rounds
+                p.participant.vars['internal_worker_code'] = w_code
+                p.participant.vars['internal_manager_code'] = m_code
+                # Write into this round's Player row (will show up in export for round 1)
+                p.internal_worker_code = w_code
+                p.internal_manager_code = m_code
+
+
+    def _copy_internal_codes_every_round(self):
+        """
+        Copies the persisted internal codes from participant.vars onto the current round's
+        Player rows so they show up in the CSV for *every* round.
+        """
+        for p in self.get_players():
+            iw = p.participant.vars.get('internal_worker_code', '')
+            im = p.participant.vars.get('internal_manager_code', '')
+            p.internal_worker_code = iw or ''
+            p.internal_manager_code = im or ''
+            # Optional: set a stable unique_id column you already have
+            p.unique_id = p.participant.code
+
 
 
 class Group(BaseGroup):
@@ -691,8 +732,11 @@ class DecisionResults(Page):
         min_report_percentage_self = group.field_maybe_none('min_report_percentage_self')
 
         # Check if group.victim_worker_id exists and if the player is the direct victim
-        victim_worker_id = group.field_maybe_none('victim_worker_id')
-        is_victim = player.id_in_group == victim_worker_id if victim_worker_id is not None else False
+       # victim_worker_id = group.field_maybe_none('victim_worker_id')
+        #is_victim = player.id_in_group == victim_worker_id if victim_worker_id is not None else False
+        victim_participant_id = manager.participant.vars.get('paired_worker_id')
+        is_victim = (player.participant.id == victim_participant_id) if victim_participant_id is not None else False
+
 
         # Get the victim worker for display purposes (not reporting)
         manager = group.get_player_by_id(2)
@@ -931,7 +975,8 @@ class BeforeDecisionsWaitPage(WaitPage):
 
     def after_all_players_arrive(self):
         # Re-pair managers and workers each round
-        self.subsession.pair_managers_with_workers(self.subsession)
+        #self.subsession.pair_managers_with_workers(self.subsession)
+        self.subsession.pair_managers_with_workers()
 
 
 
