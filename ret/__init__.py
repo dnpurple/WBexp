@@ -99,83 +99,67 @@ class Subsession(BaseSubsession):
 
 
     #def pair_managers_with_workers(cls, subsession):
-    def pair_managers_with_workers(self):        
-        #players = subsession.get_players()
+    def pair_managers_with_workers(self):
         players = self.get_players()
         managers = [p for p in players if p.get_role() == 'Manager']
-        workers = [p for p in players if p.get_role() == 'Worker']
-
+        workers  = [p for p in players if p.get_role() == 'Worker']
+    
         if len(managers) != len(workers):
             raise ValueError("Mismatch in number of managers and workers!")
-
+    
         random.shuffle(workers)
         pairs = zip(managers, workers)
-
-        # Clear previous pairings
+    
+        # Clear previous pairings for everyone
         for p in players:
             p.participant.vars.pop('paired_worker_id', None)
             p.participant.vars.pop('paired_manager_id', None)
-
-            #to identify the pairs when doing analysis
-            p.pair_id = ''  # Clear pair_id
-            p.external_worker_code = ''  # Clear external_worker_code
-            p.external_manager_code = ''  # Clear external_manager_code
-
-        # Set new pairings explicitly
+            p.pair_id = ''
+            p.external_worker_code = ''
+            p.external_manager_code = ''
+            p.in_group_match = False
+    
+        # Make new pairs
         for manager, worker in pairs:
+            # Save link both ways
             manager.participant.vars['paired_worker_id'] = worker.participant.id
             worker.participant.vars['paired_manager_id'] = manager.participant.id
-            group = manager.group
-            group.victim_worker_id = worker.participant.id
-            group.manager_id = manager.participant.id
-
-            # New: Set unique pair_id using sorted participant codes
+    
+            # Group bookkeeping you already rely on elsewhere
+            g = manager.group
+            g.victim_worker_id = worker.participant.id
+            g.manager_id = manager.participant.id
+    
+            # Stable pair_id built from the 2 participant codes (same pair => same id across rounds)
             sorted_codes = sorted([manager.participant.code, worker.participant.code])
             pair_id_str = '-'.join(sorted_codes)
             manager.pair_id = pair_id_str
             worker.pair_id = pair_id_str
-
-            #Also new: Set external_worker_code for manager and external_manager_code for worker
+    
+            # Round-specific “external” partner codes
             manager.external_worker_code = worker.participant.code
             worker.external_manager_code = manager.participant.code
-
-            #for debugginf purposes
-            print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, pair_id = {pair_id_str}")
-
-            # Optional but nice: mark in-group match using the internal codes
-            manager.in_group_match = (
-                (manager.internal_worker_code == worker.internal_worker_code) and
-                (manager.internal_manager_code == worker.internal_manager_code)
-            )
-            worker.in_group_match = manager.in_group_match
-
-        print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, pair_id = {pair_id_str}")
-
-
-        # Reset defaults clearly
-       # for group in self.get_groups():
-        #for group in subsession.get_groups():
-        #    group.wants_to_take = True
-         #   group.wants_to_pay_transfer = False
-          #  for player in group.get_players():
-           #     participant = player.participant
-            #    participant.vars['selected_round'] = None
-             #   participant.vars['selected_round_earnings'] = 0
-
-
-        # Reset defaults clearly for the new round
+    
+            # **Robust** in-group flag: are these 2 people in the same fixed oTree group this round?
+            same_group = (manager.group == worker.group)
+            manager.in_group_match = same_group
+            worker.in_group_match = same_group
+    
+            print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, "
+                  f"pair_id={pair_id_str}, in_group={same_group}")
+    
+        # Reset defaults clearly for the new round (no stale theft/report state)
         for g in self.get_groups():
-            # Neutral (no theft) defaults until the manager actually chooses
             g.wants_to_take = False
             g.wants_to_pay_transfer = False
             g.percentage_taken = 0
             g.transfer_amount = 0
             g.authority_accepted_transfer = None
-        
             for pl in g.get_players():
                 part = pl.participant
                 part.vars['selected_round'] = None
                 part.vars['selected_round_earnings'] = 0
+    
 
 
     def set_random_round_payment(self):
