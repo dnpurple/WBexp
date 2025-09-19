@@ -43,16 +43,18 @@ class C(BaseConstants):
 
 class Subsession(BaseSubsession):
     def creating_session(self):
-
-        for player in self.get_players():
-            player.set_treatment_probability()
-
+        # set treatment each round
+        for p in self.get_players():
+            p.set_treatment_probability()
+    
         if self.round_number == 1:
+            # build the round-1 groups and set round-1 fields
             self.initialize_group_structure()
-            # Persist internal codes into participant.vars so rounds 2..N get them
+            # persist the internal codes into participant.vars so we can copy them every round
             self._assign_internal_codes_round1()
-
-        # Copy internal codes into *this* round's Player rows for the export
+    
+        # copy persisted codes into THIS round's Player rows (for export),
+        # but do NOT blank out if we don't have values yet
         self._copy_internal_codes_every_round()
 
 
@@ -151,14 +153,30 @@ class Subsession(BaseSubsession):
 
 
         # Reset defaults clearly
-        for group in self.get_groups():
+       # for group in self.get_groups():
         #for group in subsession.get_groups():
-            group.wants_to_take = True
-            group.wants_to_pay_transfer = False
-            for player in group.get_players():
-                participant = player.participant
-                participant.vars['selected_round'] = None
-                participant.vars['selected_round_earnings'] = 0
+        #    group.wants_to_take = True
+         #   group.wants_to_pay_transfer = False
+          #  for player in group.get_players():
+           #     participant = player.participant
+            #    participant.vars['selected_round'] = None
+             #   participant.vars['selected_round_earnings'] = 0
+
+
+        # Reset defaults clearly for the new round
+        for g in self.get_groups():
+            # Neutral (no theft) defaults until the manager actually chooses
+            g.wants_to_take = False
+            g.wants_to_pay_transfer = False
+            g.percentage_taken = 0
+            g.transfer_amount = 0
+            g.authority_accepted_transfer = None
+        
+            for pl in g.get_players():
+                part = pl.participant
+                part.vars['selected_round'] = None
+                part.vars['selected_round_earnings'] = 0
+
 
     def set_random_round_payment(self):
         import random
@@ -201,18 +219,22 @@ class Subsession(BaseSubsession):
                 p.internal_manager_code = m_code
 
 
+    
     def _copy_internal_codes_every_round(self):
         """
-        Copies the persisted internal codes from participant.vars onto the current round's
-        Player rows so they show up in the CSV for *every* round.
+        Copy internal codes from participant.vars onto this round's Player rows,
+        but don't overwrite with empty strings.
         """
         for p in self.get_players():
-            iw = p.participant.vars.get('internal_worker_code', '')
-            im = p.participant.vars.get('internal_manager_code', '')
-            p.internal_worker_code = iw or ''
-            p.internal_manager_code = im or ''
-            # Optional: set a stable unique_id column you already have
+            iw = p.participant.vars.get('internal_worker_code')
+            if iw:
+                p.internal_worker_code = iw
+            im = p.participant.vars.get('internal_manager_code')
+            if im:
+                p.internal_manager_code = im
+            # keep your stable per-participant id if useful in analysis
             p.unique_id = p.participant.code
+
 
 
 
@@ -387,84 +409,83 @@ def set_payoffs(group: Group):
     manager = group.get_player_by_id(2)
     authority = group.get_player_by_id(3)
 
+    # Find the matched victim worker by participant.id
     victim_participant_id = manager.participant.vars.get('paired_worker_id')
     victim_worker = None
-
     for p in group.subsession.get_players():
         if p.participant.id == victim_participant_id:
             victim_worker = p
             break
-
     if victim_worker is None:
         raise ValueError(f"Paired victim_worker with participant ID {victim_participant_id} not found!")
 
-    # Correctly set in_group_match explicitly
-    in_group_match = victim_worker.group == manager.group
-    manager.in_group_match = in_group_match
-    victim_worker.in_group_match = in_group_match
-
-    # Explicit calculation of the stolen amount
-    if group.wants_to_take and group.percentage_taken > 0:
-        amount_taken = int((group.percentage_taken / 100) * victim_worker.points_earned)
+    # --- Theft calculation (coerce None -> 0) ---
+    pct = group.field_maybe_none('percentage_taken') or 0
+    wants_to_take = bool(group.field_maybe_none('wants_to_take'))
+    if wants_to_take and pct > 0:
+        amount_taken = int((pct / 100) * victim_worker.points_earned)
     else:
         amount_taken = 0
 
     manager.amount_stolen = amount_taken
     victim_worker.amount_lost = amount_taken
 
-    # Handle authority transfer logic explicitly
-    authority_accepted_transfer = group.field_maybe_none('authority_accepted_transfer') or False
-    if group.wants_to_take and group.wants_to_pay_transfer and authority_accepted_transfer:
+    # --- Authority transfer ---
+    authority_accepted_transfer = bool(group.field_maybe_none('authority_accepted_transfer'))
+    wants_to_pay_transfer = bool(group.field_maybe_none('wants_to_pay_transfer'))
+    if wants_to_take and wants_to_pay_transfer and authority_accepted_transfer:
         authority.transfer_received = C.TRANSFER_AMOUNT - C.INTERFERE_COST
         manager.transfer_paid = C.TRANSFER_AMOUNT
     else:
         authority.transfer_received = 0
         manager.transfer_paid = 0
 
-    # Worker reporting logic
-    worker = group.get_player_by_id(1)  # worker making the report decision
-    is_victim = worker == victim_worker
-    report_threshold = group.min_report_percentage_self if is_victim else group.min_report_percentage_other_worker
+    # --- Reporting logic, ONLY if actual theft occurred ---
+    theft_occurred = amount_taken > 0
 
-    worker.intended_to_report = report_threshold <= group.percentage_taken < 51
+    worker = group.get_player_by_id(1)  # the in-group worker
+    is_victim = (worker == victim_worker)
+    # Fallback to "never report" if thresholds weren't filled for some reason
+    report_threshold = (
+        group.field_maybe_none('min_report_percentage_self') if is_victim
+        else group.field_maybe_none('min_report_percentage_other_worker')
+    )
+    if report_threshold is None:
+        report_threshold = 51  # effectively "never", given our <51 condition
+
+    worker.intended_to_report = (theft_occurred and (report_threshold <= pct < 51))
 
     if worker.intended_to_report:
         success_chance = worker.treatment_probability if authority_accepted_transfer else C.REPORT_PENALTY_PROBABILITIES[0]
         report_successful = random.uniform(0, 1) < success_chance
         worker.worker_reported = True
         worker.report_successful = report_successful
-        worker.report_reward = C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY if report_successful else -C.WORKER_REPORT_PENALTY
+        worker.report_reward = (C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY) if report_successful else -C.WORKER_REPORT_PENALTY
 
         if report_successful:
-            #manager.amount_stolen = 0  # Manager loses stolen amount if caught
-            manager.total_earnings = 0  # Manager loses everything if successfully reported
+            # Manager loses everything if successfully reported
+            manager.total_earnings = 0
             manager.payoff = 0
-
     else:
         worker.worker_reported = False
         worker.report_successful = False
         worker.report_reward = 0
 
-    # This is safe now because the manager totals are correctly recalculated above if a report succeeds
-    if not worker.report_successful:  # recalculate only if report not successful (otherwise zeroed above)
+    # --- Earnings ---
+    if not worker.report_successful:  # if not zeroed above
         manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
 
-    # Explicit and correct earnings calculation
-    #victim_worker.total_earnings = victim_worker.points_earned - victim_worker.amount_lost
     worker.total_earnings = worker.points_earned + worker.report_reward - worker.amount_lost
-    #manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
     authority.total_earnings = authority.points_earned + authority.transfer_received
 
-
-    # Set payoffs explicitly and clearly
-    #victim_worker.payoff = victim_worker.total_earnings
+    # Set payoffs
     worker.payoff = worker.total_earnings
     manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
 
-    # Populate effort_points explicitly with points_earned
-    for player in group.get_players():
-        player.effort_points = player.points_earned
+    # Populate effort_points for all players
+    for pl in group.get_players():
+        pl.effort_points = pl.points_earned
 
 
 class RET(Page):
