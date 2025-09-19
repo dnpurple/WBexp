@@ -49,8 +49,10 @@ class Subsession(BaseSubsession):
 
         if self.round_number == 1:
             self.initialize_group_structure()
+            # Persist internal codes into participant.vars so rounds 2..N get them
+            self._assign_internal_codes_round1()
 
-        # ALWAYS copy internal codes into this round's Player rows for the export:
+        # Copy internal codes into *this* round's Player rows for the export
         self._copy_internal_codes_every_round()
 
 
@@ -96,7 +98,8 @@ class Subsession(BaseSubsession):
 
     #def pair_managers_with_workers(cls, subsession):
     def pair_managers_with_workers(self):        
-        players = subsession.get_players()
+        #players = subsession.get_players()
+        players = self.get_players()
         managers = [p for p in players if p.get_role() == 'Manager']
         workers = [p for p in players if p.get_role() == 'Worker']
 
@@ -137,8 +140,19 @@ class Subsession(BaseSubsession):
             #for debugginf purposes
             print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, pair_id = {pair_id_str}")
 
+            # Optional but nice: mark in-group match using the internal codes
+            manager.in_group_match = (
+                (manager.internal_worker_code == worker.internal_worker_code) and
+                (manager.internal_manager_code == worker.internal_manager_code)
+            )
+            worker.in_group_match = manager.in_group_match
+
+        print(f"Pair: Manager {manager.participant.code}, Worker {worker.participant.code}, pair_id = {pair_id_str}")
+
+
         # Reset defaults clearly
-        for group in subsession.get_groups():
+        for group in self.get_groups():
+        #for group in subsession.get_groups():
             group.wants_to_take = True
             group.wants_to_pay_transfer = False
             for player in group.get_players():
