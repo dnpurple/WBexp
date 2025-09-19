@@ -60,6 +60,27 @@ class Subsession(BaseSubsession):
             self.set_group_matrix(group_matrix)
 
 
+            # NEW: Set internal codes for each group after matrix is created
+            for group in self.get_groups():
+                group_players = group.get_players()
+                # Sort by id_in_group to ensure consistent order: Worker(1), Manager(2), Authority(3)
+                sorted_players = sorted(group_players, key=lambda p: p.id_in_group)
+                
+                worker = next(p for p in sorted_players if p.id_in_group == 1)
+                manager = next(p for p in sorted_players if p.id_in_group == 2)
+                authority = next(p for p in sorted_players if p.id_in_group == 3)
+                
+                # Set internal codes for all players in the group
+                worker.internal_manager_code = manager.participant.code
+                worker.internal_worker_code = worker.participant.code  # Self-reference
+                manager.internal_worker_code = worker.participant.code
+                manager.internal_manager_code = manager.participant.code  # Self-reference
+                authority.internal_worker_code = worker.participant.code
+                authority.internal_manager_code = manager.participant.code
+                
+                print(f"Group {group.id}: Worker={worker.participant.code}, Manager={manager.participant.code}")
+
+
 
 
 
@@ -230,6 +251,8 @@ class Player(BasePlayer):
     pair_id = models.StringField(blank=True, initial='')  # Unique ID for the matched pair per round
     external_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker paired with this manager")
     external_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager paired with this worker")
+    internal_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager in this player's fixed group")
+    internal_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker in this player's fixed group")
 
     def set_treatment_probability(self):
         treatment_order = self.session.config.get("treatment_order", "low_to_high")
