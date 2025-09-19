@@ -741,6 +741,10 @@ class DecisionResults(Page):
         other_player1 = other_players[0]
         other_player2 = other_players[1]
 
+        # Identify the manager and worker in THIS group
+        manager = group.get_player_by_id(2)
+        worker_in_group = group.get_player_by_id(1)
+
         # Retrieve the reporting thresholds
         min_report_percentage_other_worker = group.field_maybe_none('min_report_percentage_other_worker')
         min_report_percentage_self = group.field_maybe_none('min_report_percentage_self')
@@ -753,7 +757,7 @@ class DecisionResults(Page):
 
 
         # Get the victim worker for display purposes (not reporting)
-        manager = group.get_player_by_id(2)
+        
         victim_participant_id = manager.participant.vars.get('paired_worker_id')
         victim_worker = None
         for p in player.subsession.get_players():
@@ -773,7 +777,6 @@ class DecisionResults(Page):
         manager = next(p for p in players if p.id_in_group == 2)  # The group’s manager
 
         # Use the worker’s stored report status (about their own manager)
-        worker_in_group = group.get_player_by_id(1)
         worker_reported = worker_in_group.worker_reported
         report_successful = worker_in_group.report_successful
 
