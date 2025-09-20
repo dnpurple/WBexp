@@ -390,15 +390,22 @@ def get_addition(player: Player):
 
 
 def set_payoffs(group: Group):
+    # --- Ensure base earnings exist for everyone (covers timeouts / any path) ---
+    for p in group.get_players():
+        if p.get_role() == "Authority":
+            p.points_earned = C.ENDOWMENT
+        else:
+            p.points_earned = p.num_solved * C.BONUS_PER_SOLVED_ADDITION
+
     manager = group.get_player_by_id(2)
     authority = group.get_player_by_id(3)
 
-    # Find the matched victim worker by participant.id
+    # Find the matched victim worker by participant.id (may be cross-group)
     victim_participant_id = manager.participant.vars.get('paired_worker_id')
     victim_worker = None
-    for p in group.subsession.get_players():
-        if p.participant.id == victim_participant_id:
-            victim_worker = p
+    for pl in group.subsession.get_players():
+        if pl.participant.id == victim_participant_id:
+            victim_worker = pl
             break
     if victim_worker is None:
         raise ValueError(f"Paired victim_worker with participant ID {victim_participant_id} not found!")
@@ -406,70 +413,85 @@ def set_payoffs(group: Group):
     # --- Theft calculation (coerce None -> 0) ---
     pct = group.field_maybe_none('percentage_taken') or 0
     wants_to_take = bool(group.field_maybe_none('wants_to_take'))
-    if wants_to_take and pct > 0:
-        amount_taken = int((pct / 100) * victim_worker.points_earned)
-    else:
-        amount_taken = 0
+    amount_taken = int((pct / 100) * victim_worker.points_earned) if (wants_to_take and pct > 0) else 0
 
-    manager.amount_stolen = amount_taken
+    manager.amount_stolen = amount_taken   # keep this even if manager is punished
     victim_worker.amount_lost = amount_taken
 
     # --- Authority transfer ---
-    authority_accepted_transfer = bool(group.field_maybe_none('authority_accepted_transfer'))
     wants_to_pay_transfer = bool(group.field_maybe_none('wants_to_pay_transfer'))
+    authority_accepted_transfer = bool(group.field_maybe_none('authority_accepted_transfer'))
+
     if wants_to_take and wants_to_pay_transfer and authority_accepted_transfer:
         authority.transfer_received = C.TRANSFER_AMOUNT - C.INTERFERE_COST
         manager.transfer_paid = C.TRANSFER_AMOUNT
+        group.transfer_amount = C.TRANSFER_AMOUNT
     else:
         authority.transfer_received = 0
         manager.transfer_paid = 0
+        group.transfer_amount = 0
 
-    # --- Reporting logic, ONLY if actual theft occurred ---
+    # --- Reporting logic ---
     theft_occurred = amount_taken > 0
+    reporting_worker = group.get_player_by_id(1)  # the in-group worker who decides
+    is_victim = (reporting_worker == victim_worker)
 
-    worker = group.get_player_by_id(1)  # the in-group worker
-    is_victim = (worker == victim_worker)
-    # Fallback to "never report" if thresholds weren't filled for some reason
-    report_threshold = (
-        group.field_maybe_none('min_report_percentage_self') if is_victim
-        else group.field_maybe_none('min_report_percentage_other_worker')
-    )
-    if report_threshold is None:
-        report_threshold = 51  # effectively "never", given our <51 condition
+    # thresholds; if missing, treat as "never"
+    thr_self = group.field_maybe_none('min_report_percentage_self')
+    thr_other = group.field_maybe_none('min_report_percentage_other_worker')
+    if thr_self is None: thr_self = 51
+    if thr_other is None: thr_other = 51
 
-    worker.intended_to_report = (theft_occurred and (report_threshold <= pct < 51))
+    threshold = thr_self if is_victim else thr_other
 
-    if worker.intended_to_report:
-        success_chance = worker.treatment_probability if authority_accepted_transfer else C.REPORT_PENALTY_PROBABILITIES[0]
-        report_successful = random.uniform(0, 1) < success_chance
-        worker.worker_reported = True
-        worker.report_successful = report_successful
-        worker.report_reward = (C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY) if report_successful else -C.WORKER_REPORT_PENALTY
+    # Intended & actual report decision
+    reporting_worker.intended_to_report = bool(theft_occurred and (pct >= threshold))
+    reporting_worker.worker_reported = reporting_worker.intended_to_report
+    group.report_decision = reporting_worker.intended_to_report
 
-        if report_successful:
-            # Manager loses everything if successfully reported
+    # Success probability: treatment only applies if transfer was OFFERED and ACCEPTED (and there was theft)
+    treatment_applies = theft_occurred and wants_to_take and wants_to_pay_transfer and authority_accepted_transfer
+    # Ensure worker has treatment_probability set
+    reporting_worker.set_treatment_probability()
+    base_success = C.REPORT_PENALTY_PROBABILITIES[0]
+    success_chance = reporting_worker.treatment_probability if treatment_applies else base_success
+
+    if reporting_worker.intended_to_report:
+        # Draw success
+        succeeded = (random.uniform(0, 1) < success_chance)
+        reporting_worker.report_would_have_succeeded = succeeded
+        reporting_worker.report_successful = succeeded
+
+        # Rewards: +100 on success, -100 on failure (achieved by your constants)
+        reporting_worker.report_reward = (
+            C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY if succeeded else -C.WORKER_REPORT_PENALTY
+        )
+
+        if succeeded:
+            # Manager loses all earnings, but we DO NOT zero out amount_stolen
             manager.total_earnings = 0
             manager.payoff = 0
     else:
-        worker.worker_reported = False
-        worker.report_successful = False
-        worker.report_reward = 0
+        reporting_worker.report_would_have_succeeded = False
+        reporting_worker.report_successful = False
+        reporting_worker.report_reward = 0
 
-    # --- Earnings ---
-    if not worker.report_successful:  # if not zeroed above
+    # --- Final earnings (if manager wasn't zeroed above) ---
+    if not reporting_worker.report_successful:
         manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
 
-    worker.total_earnings = worker.points_earned + worker.report_reward - worker.amount_lost
+    reporting_worker.total_earnings = reporting_worker.points_earned + reporting_worker.report_reward - reporting_worker.amount_lost
     authority.total_earnings = authority.points_earned + authority.transfer_received
 
-    # Set payoffs
-    worker.payoff = worker.total_earnings
+    # Set payoffs cleanly
+    reporting_worker.payoff = reporting_worker.total_earnings
     manager.payoff = manager.total_earnings
     authority.payoff = authority.total_earnings
 
-    # Populate effort_points for all players
+    # Mirror effort points for all players
     for pl in group.get_players():
         pl.effort_points = pl.points_earned
+
 
 
 class RET(Page):
@@ -986,7 +1008,16 @@ class RETResults(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        player.payoff = player.points_earned  # Ensure payoff is stored properly
+        #player.payoff = player.points_earned  # Ensure payoff is stored properly
+         # Defensive: compute points_earned again in case vars_for_template was never hit
+        if player.id_in_group == 3:
+            player.points_earned = C.ENDOWMENT
+        else:
+            player.points_earned = player.num_solved * C.BONUS_PER_SOLVED_ADDITION
+
+        # Mirror points_earned to effort_points, and initialize payoff
+        player.effort_points = player.points_earned
+        player.payoff = player.points_earned
 
 class BeforeDecisionsWaitPage(WaitPage):
     wait_for_all_groups = True  # Ensures all players from all groups arrive
