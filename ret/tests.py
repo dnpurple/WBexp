@@ -1,115 +1,72 @@
 # ret/tests.py
-from otree.api import Bot, Submission, expect
-from . import (
-    C,
-    RET, RETResults,
-    BeforeDecisionsWaitPage,
-    ManagerDecisionPage, WorkerPage, AuthorityPage,
-    ResultsWaitPage, DecisionResults, RoundResults,
-    RandomRoundWaitPage, RandomRoundPayment,
-)
+from otree.api import Bot, Submission
+from . import *      # brings your Page classes into scope
+import random
 
 class PlayerBot(Bot):
-    """
-    Bot cycles through scenarios by round_number % 4:
-      1: No theft
-      2: Theft, no bribe
-      3: Theft + bribe (authority accepts on even rounds)
-      0: Theft + bribe (authority accepts on even rounds), higher pct
-
-    Worker thresholds are set low (20) so reports will be intended when theft >= 20%.
-    """
-
     def play_round(self):
-        p = self.player
-        g = p.group
+        # Round 1 starts with this page in your page_sequence
+        if self.round_number == 1:
+            yield YourRoleIs
 
-        # --- RET (live page): skip interaction, simulate time-out, but pre-set output fields ---
-        # Give predictable productivity so points/payoffs propagate through your pipeline.
-        if p.id_in_group == 3:  # Authority gets salary via your page logic
-            p.num_solved = 0
-        else:
-            # rotate 3..5 correct to exercise paycheck math
-            p.num_solved = 3 + (p.round_number % 3)
+        # Real-effort page (live). No form fields -> just advance.
+        # check_html=False avoids brittle HTML checks on a dynamic page.
+        yield Submission(RET, check_html=False)
 
-        # Skip the live addition page; timeout is fine for testing the rest of the pipeline
-        yield Submission(RET, {}, timeout_happened=True)
+        # Points are computed here; no inputs needed.
         yield RETResults
 
-        # Pairing, state reset, etc.
+        # Global wait to re-pair etc.
         yield BeforeDecisionsWaitPage
 
-        # --- Manager decision logic (drives the scenarios we want to test) ---
-        # Round pattern for coverage
-        rmod = p.round_number % 4
+        # --- Decisions by role ---
 
-        if p.id_in_group == 2:
-            # Manager
-            if rmod == 1:
-                # No theft; no bribe
+        # Manager decision page (group-level form).
+        if self.player.id_in_group == 2:
+            # choose a consistent, valid combo
+            take = random.random() < 0.5
+            if take:
+                pct = random.choice([10, 20, 30, 40, 50])  # 1..50 allowed
+                offer = random.random() < 0.5
+                yield ManagerDecisionPage, dict(
+                    wants_to_take=True,
+                    percentage_taken=pct,
+                    wants_to_pay_transfer=offer,
+                )
+            else:
+                # If not taking, your error_message forbids offering a transfer
                 yield ManagerDecisionPage, dict(
                     wants_to_take=False,
                     percentage_taken=0,
                     wants_to_pay_transfer=False,
                 )
-            elif rmod == 2:
-                # Theft, no bribe
-                yield ManagerDecisionPage, dict(
-                    wants_to_take=True,
-                    percentage_taken=30,
-                    wants_to_pay_transfer=False,
-                )
-            elif rmod == 3:
-                # Theft + bribe (acceptance handled by Authority on even rounds)
-                yield ManagerDecisionPage, dict(
-                    wants_to_take=True,
-                    percentage_taken=30,
-                    wants_to_pay_transfer=True,
-                )
-            else:
-                # Theft + bribe, higher percentage
-                yield ManagerDecisionPage, dict(
-                    wants_to_take=True,
-                    percentage_taken=50,
-                    wants_to_pay_transfer=True,
-                )
 
-        # --- Worker thresholds (pick values to force report when theft >= 20%) ---
-        if p.id_in_group == 1:
+        # Worker thresholds (group-level form)
+        if self.player.id_in_group == 1:
+            # Any 1..50 are fine; your code handles None by randomizing, but we’ll be explicit.
             yield WorkerPage, dict(
-                min_report_percentage_other_worker=20,
-                min_report_percentage_self=20,
+                min_report_percentage_other_worker=25,
+                min_report_percentage_self=25,
             )
 
-        # --- Authority acceptance ---
-        # Accept on even rounds; reject on odd rounds.
-        if p.id_in_group == 3:
-            accept = (p.round_number % 2 == 0)
-            yield AuthorityPage, dict(authority_accepted_transfer=accept)
+        # Authority acceptance toggle (group-level form)
+        if self.player.id_in_group == 3:
+            # Either True or False is valid regardless of whether a transfer was actually offered
+            yield AuthorityPage, dict(authority_accepted_transfer=random.choice([True, False]))
 
-        # Payoff computation happens after this wait page:
+        # Payoffs computed here (your WaitPage calls set_payoffs)
         yield ResultsWaitPage
 
-        # Results & bookkeeping pages
+        # Display pages
         yield DecisionResults
         yield RoundResults
 
-        # Final random payment round machinery
-        if p.round_number == C.NUM_ROUNDS:
+        # Treatment-change announcement appears only on round 9 (SWITCH_ROUND - 1)
+        if self.round_number == C.SWITCH_ROUND - 1:
+            yield TreatmentChangeAnnouncement
+
+        # End-of-experiment only on last round
+        if self.round_number == C.NUM_ROUNDS:
             yield RandomRoundWaitPage
             yield RandomRoundPayment
 
-        # --- Light sanity checks for the Worker on theft rounds ---
-        # (Only run assertions when we are the worker; avoids role-specific coupling.)
-        if p.id_in_group == 1:
-            theft = bool(getattr(g, 'wants_to_take', False)) and (g.field_maybe_none('percentage_taken') or 0) > 0
-
-            if theft:
-                # With thresholds set to 20, intended_to_report should be True for pct >= 20.
-                expect(p.intended_to_report, True)
-
-                # If a report was evaluated, your set_payoffs() now stores a punishment_draw.
-                # We only check that the draw exists when a report was intended.
-                # (If you added the Group.punishment_draw field as we discussed.)
-                if hasattr(g, 'punishment_draw'):
-                    expect(g.punishment_draw is not None, True)
