@@ -156,6 +156,8 @@ class Subsession(BaseSubsession):
             g.transfer_amount = 0
             g.authority_accepted_transfer = None
             g.bribe_offered_and_accepted = False
+            g.punishment_draw = None
+            g.punishment_cutoff = None
             for pl in g.get_players():
                 part = pl.participant
                 part.vars['selected_round'] = None
@@ -259,6 +261,10 @@ class Group(BaseGroup):
       #  blank=True,  # Set to True if transfer amount is optional
        # doc="Amount offered by the manager for the authority's acceptance."
     #)
+
+    punishment_draw = models.FloatField(blank=True, doc="Uniform[0,1) random draw used to decide report success this round")
+    punishment_cutoff = models.FloatField(blank=True, doc="Success probability used this round (worker.treatment_probability or 0.97)" )
+
 
 
 class Player(BasePlayer):
@@ -441,14 +447,28 @@ def set_payoffs(group: Group):
     if report_threshold is None:
         report_threshold = 51
 
+    pct = group.field_maybe_none('percentage_taken') or 0
     worker.intended_to_report = (theft_occurred and (report_threshold <= pct < 51))
 
+
+    # clear any stale value at the start of this evaluation
+    group.punishment_draw = None
+    # group.punishment_cutoff = None  # if you added the cutoff field
+    
     if worker.intended_to_report:
         success_chance = (worker.treatment_probability
                           if group.bribe_offered_and_accepted
                           else C.REPORT_PENALTY_PROBABILITIES[0])
-        report_successful = random.uniform(0, 1) < success_chance
-        worker.worker_reported  = True
+
+       # store the cutoff (optional)
+        group.punishment_cutoff = float(success_chance)
+
+        # draw once and store it
+        draw = random.random()                 # Uniform[0,1)
+        group.punishment_draw = float(draw)    # <-- THIS is the audit trail value
+
+        report_successful = (draw < success_chance)
+        worker.worker_reported   = True
         worker.report_successful = report_successful
 
         # Your stated payoffs: +100 if successful, -100 if unsuccessful
