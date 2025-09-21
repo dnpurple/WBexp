@@ -31,16 +31,16 @@ SESSION_CONFIGS = [
 ]
 
 
-SESSION_CONFIGS = [
+#SESSION_CONFIGS = [
     # For tests
-    dict(
-        name='wb_ret_only',                 # <<< new for bots
-        display_name='WB: RET only (bots)',
-        num_demo_participants=3,            # 3 players per group; use 9 if you want 3 groups
-        app_sequence=['ret'],
-        treatment_order='low_to_high',      # or 'high_to_low' – whichever you want to test
-    ),
-]
+    #dict(
+     #   name='wb_ret_only',                 # <<< new for bots
+      #  display_name='WB: RET only (bots)',
+       # num_demo_participants=3,            # 3 players per group; use 9 if you want 3 groups
+        #app_sequence=['ret'],
+        #treatment_order='low_to_high',      # or 'high_to_low' – whichever you want to test
+    #),
+#]
 
 
 ROOMS = [
