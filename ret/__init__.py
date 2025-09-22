@@ -514,7 +514,7 @@ class RET(Page):
     @staticmethod
     def get_timeout_seconds(player: Player):
         session = player.session
-        return 60  # player.session.config['quiz_timeout_seconds']
+        return 600  # player.session.config['quiz_timeout_seconds']
 
 
 
@@ -542,7 +542,7 @@ class ManagerDecisionPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
+        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
     @staticmethod
     def vars_for_template(player: Player):
         group = player.group
@@ -625,7 +625,7 @@ class WorkerPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
+        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
 
 
     @staticmethod
@@ -698,7 +698,7 @@ class AuthorityPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
+        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
 
     @staticmethod
     def is_displayed(player: Player):
