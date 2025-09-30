@@ -552,22 +552,30 @@ class ManagerDecisionPage(Page):
     form_fields = ['wants_to_take', 'percentage_taken', 'wants_to_pay_transfer']
     timer_text = 'Time left:'
 
+    
     @staticmethod
     def error_message(player, values):
         errors = {}
-
-
-
-        if values['wants_to_take']:
-            if values['percentage_taken'] is None or not (1 <= values['percentage_taken'] <= 50):
-                errors['percentage_taken'] = "Please enter a percentage between 1 and 50."
+    
+        wants = values.get('wants_to_take', None)
+        if wants is None:
+            errors['wants_to_take'] = "Please select Yes or No."
+            return errors  # stop early; avoids cascading messages
+    
+        if wants:
+            pct = values.get('percentage_taken', None)
+            if pct is None or not (1 <= pct <= 50):
+                errors['percentage_taken'] = "Enter a percentage between 1 and 50."
+            transfer_choice = values.get('wants_to_pay_transfer', None)
+            if transfer_choice is None:
+                errors['wants_to_pay_transfer'] = "Please select Yes or No for the transfer."
         else:
-            if values['wants_to_pay_transfer']:
-                errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking from the worker."
+            # If they chose No, they cannot offer a transfer
+            if values.get('wants_to_pay_transfer') is True:
+                errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking."
+    
+        return errors or None
 
-
-
-        return errors if errors else None
 
     @staticmethod
     def get_timeout_seconds(player: Player):
@@ -608,30 +616,33 @@ class ManagerDecisionPage(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        group = player.group
+        g = player.group
         paired_worker_id = player.participant.vars.get('paired_worker_id')
         paired_worker = get_player_by_participant_id(
-            group, paired_worker_id, player.round_number
+            g, paired_worker_id, player.round_number
         ) if paired_worker_id else None
         
         if timeout_happened:
             player.timeout_flag = True
-            if not group.wants_to_take:
-                group.wants_to_pay_transfer = False
-                group.percentage_taken = 0
+            # Backend defaults on timeout
+            g.wants_to_take = False
+            g.percentage_taken = 0
+            g.wants_to_pay_transfer = False
+            player.manager_take_earnings = player.points_earned
+            return
 
         # Explicitly ensure percentage_taken is defined
-        if group.field_maybe_none('percentage_taken') is None:
-            group.percentage_taken = 0
+       if g.field_maybe_none('percentage_taken') is None:
+            g.percentage_taken = 0
 
         # Ensure consistency: if the manager doesn't take, reset transfer and percentage
-        if not group.wants_to_take:
-            group.wants_to_pay_transfer = False
-            group.percentage_taken = 0
+        if not g.wants_to_take:
+            g.wants_to_pay_transfer = False
+            g.percentage_taken = 0
             player.manager_take_earnings = player.points_earned
         else:
-            if paired_worker and group.percentage_taken > 0:
-                amount_taken_preview = int((group.percentage_taken / 100) * paired_worker.points_earned)
+            if paired_worker and g.percentage_taken > 0:
+                amount_taken_preview = int((g.percentage_taken / 100) * paired_worker.points_earned)
                 player.manager_take_earnings = player.points_earned + amount_taken_preview
             else:
                 player.manager_take_earnings = player.points_earned
