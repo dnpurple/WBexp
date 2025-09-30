@@ -623,21 +623,17 @@ class ManagerDecisionPage(Page):
 
         # Ensure consistency: if the manager doesn't take, reset transfer and percentage
         if not group.wants_to_take:
-            group.wants_to_pay_transfer = False
-            group.percentage_taken = 0
-            player.manager_take_earnings = player.points_earned
-            if paired_worker:
-                paired_worker.amount_lost = 0
-        else:
-            # Manager wants to take; calculate amount stolen
-            if paired_worker and group.percentage_taken > 0:
-                amount_taken = int((group.percentage_taken / 100) * paired_worker.points_earned)
-                player.manager_take_earnings = player.points_earned + amount_taken
-                paired_worker.amount_lost = amount_taken
-            else:
-                player.manager_take_earnings = player.points_earned
-                if paired_worker:
-                    paired_worker.amount_lost = 0
+    group.wants_to_pay_transfer = False
+    group.percentage_taken = 0
+    player.manager_take_earnings = player.points_earned
+else:
+    if paired_worker and group.percentage_taken > 0:
+        amount_taken_preview = int((group.percentage_taken / 100) * paired_worker.points_earned)
+        player.manager_take_earnings = player.points_earned + amount_taken_preview
+    else:
+        player.manager_take_earnings = player.points_earned
+
+                    
 
 
     @staticmethod
