@@ -11,8 +11,8 @@
  * - Enforces basic submit-time validation
  */
 (function() {
-  // Server-provided worker points (safe default if missing)
-  const WORKER_POINTS = {{ worker_points_earned|default:0 }};
+  // Server-provided worker points (already passed as an integer from Python)
+  const WORKER_POINTS = {{ worker_points_earned }};
 
   function qs(sel){ return document.querySelector(sel); }
   function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
@@ -89,7 +89,7 @@
       });
     });
 
-    // Submit-time validation (keeps your existing logic)
+    // Submit-time validation
     const form = document.querySelector("form");
     if (form) {
       form.addEventListener("submit", function(e) {
@@ -148,11 +148,7 @@
     margin: 10px auto;
     width: fit-content;
   }
-  .otree-radio-option {
-    margin: 0;
-    display: flex;
-    align-items: center;
-  }
+  .otree-radio-option { margin: 0; display: flex; align-items: center; }
   .otree-radio-option label { margin: 0 5px; }
   .otree-timer {
     background-color: transparent !important;
@@ -212,7 +208,7 @@
   <div class="input-label-container">
     <label>Percentage Taken</label>
     <input id="pct-input" type="number" name="percentage_taken" min="1" max="50"
-           value="{{ percentage_taken|default:0 }}"
+           value="{{ percentage_taken }}"
            style="width: 60px; text-align: center;" /> <span>%</span>
   </div>
   {{ formfield_errors 'percentage_taken' }}
