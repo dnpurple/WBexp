@@ -5,24 +5,23 @@
 <script>
 /**
  * ManagerDecisionPage interactions
- * - Pure client-side preview of the amount the manager would receive
- * - Toggles the percentage/transfer section
- * - Resets preview to 0 ECUs whenever "No" is selected
- * - Enforces basic submit-time validation
+ * - No defaults shown initially
+ * - Transfer options only visible if "Yes" to stealing
+ * - Must pick Yes/No to stealing; if Yes, must enter 1–50 and pick Yes/No to transfer
+ * - Preview blank until a choice is made; shows 0 if "No", computes if "Yes"
  */
 (function() {
-  // Server-provided worker points (already passed as an integer from Python)
   const WORKER_POINTS = {{ worker_points_earned }};
 
   function qs(sel){ return document.querySelector(sel); }
   function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
 
-  function wantsToTakeChecked() {
-    const yes = qs('input[name="wants_to_take"][value="True"]');
-    return !!(yes && yes.checked);
-  }
+  function yesChecked()  { return !!qs('input[name="wants_to_take"][value="True"]:checked'); }
+  function noChecked()   { return !!qs('input[name="wants_to_take"][value="False"]:checked'); }
+  function anyChecked()  { return !!qs('input[name="wants_to_take"]:checked'); }
 
   function setTransferRadiosForNotTaking() {
+    // backend default for transfer when not stealing is "No"
     const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
     const no  = qs('input[name="wants_to_pay_transfer"][value="False"]');
     if (no) no.checked = true;
@@ -34,10 +33,17 @@
     const pctInput = qs('#pct-input');
     if (!earningsDisplay || !pctInput) return;
 
-    if (!wantsToTakeChecked()) {
+    // If neither Yes nor No selected, show nothing
+    if (!anyChecked()) {
+      earningsDisplay.textContent = "";
+      return;
+    }
+    // If "No", show 0 preview
+    if (noChecked()) {
       earningsDisplay.textContent = `You will receive 0 ECUs (0% of ${WORKER_POINTS}).`;
       return;
     }
+    // If "Yes", compute
     const raw = pctInput.value;
     const pct = parseInt(raw, 10);
     if (Number.isInteger(pct) && pct >= 1 && pct <= 50) {
@@ -64,18 +70,14 @@
       setTransferRadiosForNotTaking();
     } else {
       pctInput.disabled = false;
-      if (!pctInput.value || pctInput.value === "0") {
-        // Let them type a valid 1–50
-        pctInput.value = "";
-      }
+      if (!pctInput.value || pctInput.value === "0") pctInput.value = ""; // let them type 1–50
     }
     computePreview();
   };
 
   document.addEventListener("DOMContentLoaded", function() {
-    // Initialize visibility based on whichever radio is pre-checked
-    const initialShow = qs('input[name="wants_to_take"]:checked')?.value === "True";
-    toggleTakeOptions(!!initialShow);
+    // Initial state: nothing selected; hide take-options panel
+    toggleTakeOptions(false);
 
     // Recompute preview whenever % changes or they toggle taking
     const pctInput = qs('#pct-input');
@@ -89,48 +91,38 @@
       });
     });
 
-    // Submit-time validation
+    // Submit-time validation (mirrors server validation)
     const form = document.querySelector("form");
     if (form) {
       form.addEventListener("submit", function(e) {
-        const wantsToTake = qs('input[name="wants_to_take"]:checked')?.value === "True";
-        const wantsToPayTransfer = qs('input[name="wants_to_pay_transfer"]:checked')?.value === "True";
-        const pctInput = qs('#pct-input');
-        const pctVal = pctInput ? pctInput.value : "";
+        const stealYes  = yesChecked();
+        const stealNo   = noChecked();
+        const stealPick = stealYes || stealNo;
 
-        if (!qs('input[name="wants_to_take"]:checked')) {
+        if (!stealPick) {
           e.preventDefault();
-          alert("Please select whether you want to take from the worker's earnings.");
+          alert("Please select whether you want to take from the worker's earnings (Yes or No).");
           return;
         }
 
-        if (wantsToTake) {
-          const pct = parseInt(pctVal, 10);
-          if (!Number.isInteger(pct) || pct < 1 || pct > 50) {
+        if (stealYes) {
+          const pctInput = qs('#pct-input');
+          const pctVal = pctInput ? parseInt(pctInput.value, 10) : NaN;
+          if (!Number.isInteger(pctVal) || pctVal < 1 || pctVal > 50) {
             e.preventDefault();
-            alert("Please enter a valid percentage between 1 and 50 if you want to take from the worker's earnings.");
+            alert("Please enter a valid percentage between 1 and 50.");
             return;
           }
-          if (!qs('input[name="wants_to_pay_transfer"]:checked')) {
+          const transferPick = !!qs('input[name="wants_to_pay_transfer"]:checked');
+          if (!transferPick) {
             e.preventDefault();
-            alert("Please select whether you want to pay a transfer to the authority.");
+            alert("Please select whether you want to pay a transfer to the authority (Yes or No).");
             return;
           }
-        }
-
-        if (!wantsToTake && wantsToPayTransfer) {
-          e.preventDefault();
-          alert("You cannot offer a transfer if you are not taking from the worker. Please select 'No' for the transfer.");
-          const no = qs('input[name="wants_to_pay_transfer"][value="False"]');
-          const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
-          if (no) no.checked = true;
-          if (yes) yes.checked = false;
-          return;
         }
       });
     }
 
-    // One initial compute (covers pre-filled percentage)
     computePreview();
   });
 })();
@@ -186,14 +178,10 @@
 <p>Do you want to take from the worker's earnings?</p>
 <div class="radio-container">
   <label>
-    <input type="radio" name="wants_to_take" value="True"
-           {% if wants_to_take == True %}checked{% endif %}
-           onclick="toggleTakeOptions(true)"> Yes
+    <input type="radio" name="wants_to_take" value="True" onclick="toggleTakeOptions(true)"> Yes
   </label>
   <label>
-    <input type="radio" name="wants_to_take" value="False"
-           {% if wants_to_take == False %}checked{% endif %}
-           onclick="toggleTakeOptions(false)"> No
+    <input type="radio" name="wants_to_take" value="False" onclick="toggleTakeOptions(false)"> No
   </label>
   {{ formfield_errors 'wants_to_take' }}
 </div>
@@ -207,9 +195,8 @@
 
   <div class="input-label-container">
     <label>Percentage Taken</label>
-    <input id="pct-input" type="number" name="percentage_taken" min="1" max="50"
-           value="{{ percentage_taken }}"
-           style="width: 60px; text-align: center;" /> <span>%</span>
+    <!-- Leave value blank initially; set to "0" only when "No" is selected (hidden) -->
+    <input id="pct-input" type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
   </div>
   {{ formfield_errors 'percentage_taken' }}
 
@@ -228,12 +215,10 @@
     <p>Do you want to pay a transfer of 60 ECUs to the authority?</p>
     <div class="radio-container">
       <label>
-        <input type="radio" name="wants_to_pay_transfer" value="True"
-               {% if wants_to_pay_transfer == True %}checked{% endif %}> Yes
+        <input type="radio" name="wants_to_pay_transfer" value="True"> Yes
       </label>
       <label>
-        <input type="radio" name="wants_to_pay_transfer" value="False"
-               {% if wants_to_pay_transfer == False %}checked{% endif %}> No
+        <input type="radio" name="wants_to_pay_transfer" value="False"> No
       </label>
       {{ formfield_errors 'wants_to_pay_transfer' }}
     </div>
