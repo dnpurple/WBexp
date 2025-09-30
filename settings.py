@@ -75,7 +75,7 @@ USE_POINTS = False
 DEMO_PAGE_INTRO_HTML = ''
 PARTICIPANT_FIELDS = ['payoff_baseline', 'wants_to_pay_transfer', 'wants_to_take', 'player_moving', 'end_payoff_two', 'end_payoff_four', 'selected_round', 'payoff_ret', 'selected_round_earnings']
 SESSION_FIELDS = ['show_round', 'treatment_phase']  # Corrected syntax
-DEBUG = False
+DEBUG = True
 
 ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
