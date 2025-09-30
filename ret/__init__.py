@@ -633,7 +633,7 @@ class ManagerDecisionPage(Page):
             if paired_worker and group.percentage_taken > 0:
                 amount_taken_preview = int((group.percentage_taken / 100) * paired_worker.points_earned)
                 player.manager_take_earnings = player.points_earned + amount_taken_preview
-        else:
+            else:
                 player.manager_take_earnings = player.points_earned
 
                     
@@ -1156,7 +1156,7 @@ class TreatmentChangeAnnouncement(Page):
 class DecisionResultsWait(WaitPage):
     wait_for_all_groups = True
 
-    after_all_players_arrive = 'set_payoffs'
+    after_all_players_arrive = set_payoffs
 
     title_text = " "
     body_text = "Please wait while other participants are making their decisions."
