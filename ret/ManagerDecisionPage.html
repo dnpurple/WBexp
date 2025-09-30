@@ -11,20 +11,25 @@
  * - Preview blank until a choice is made; shows 0 if "No", computes if "Yes"
  */
 (function() {
-  const WORKER_POINTS = {{ worker_points_earned }};
+  const WORKER_POINTS = {{ worker_points_earned|default:0 }};
 
   function qs(sel){ return document.querySelector(sel); }
   function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
 
-  function yesChecked()  { return !!qs('input[name="wants_to_take"][value="True"]:checked'); }
-  function noChecked()   { return !!qs('input[name="wants_to_take"][value="False"]:checked'); }
-  function anyChecked()  { return !!qs('input[name="wants_to_take"]:checked'); }
+  function yesChecked() { return !!qs('input[name="wants_to_take"][value="True"]:checked'); }
+  function noChecked()  { return !!qs('input[name="wants_to_take"][value="False"]:checked'); }
+  function anyChecked() { return !!qs('input[name="wants_to_take"]:checked'); }
 
-  function setTransferRadiosForNotTaking() {
-    // backend default for transfer when not stealing is "No"
+  function clearTransferRadios() {
     const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
     const no  = qs('input[name="wants_to_pay_transfer"][value="False"]');
-    if (no) no.checked = true;
+    if (yes) yes.checked = false;
+    if (no)  no.checked  = false;
+  }
+  function setTransferNo() {
+    const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
+    const no  = qs('input[name="wants_to_pay_transfer"][value="False"]');
+    if (no)  no.checked  = true;
     if (yes) yes.checked = false;
   }
 
@@ -44,8 +49,7 @@
       return;
     }
     // If "Yes", compute
-    const raw = pctInput.value;
-    const pct = parseInt(raw, 10);
+    const pct = parseInt(pctInput.value, 10);
     if (Number.isInteger(pct) && pct >= 1 && pct <= 50) {
       const amt = Math.round((pct / 100) * WORKER_POINTS);
       earningsDisplay.textContent = `You will receive ${amt} ECUs (${pct}% of ${WORKER_POINTS}).`;
@@ -54,8 +58,8 @@
     }
   }
 
-  // Expose for onclick handlers in the radios
-  window.toggleTakeOptions = function(show) {
+  // Show/hide the theft options panel
+  function toggleTakeOptions(show) {
     const takeOptions = qs("#take-options");
     const pctInput    = qs('#pct-input');
     if (!takeOptions || !pctInput) return;
@@ -64,26 +68,33 @@
     pctInput.required = show;
 
     if (!show) {
-      // Force backend-consistent values when "No"
-      pctInput.value = "0";
+      // We do NOT preselect the transfer in the visible UI;
+      // keep fields inert and blank; backend defaults are enforced on timeout.
+      pctInput.value = "";
       pctInput.disabled = true;
-      setTransferRadiosForNotTaking();
+      // If you *want* a hidden backend “No” when explicit No is chosen:
+      // setTransferNo();
     } else {
       pctInput.disabled = false;
-      if (!pctInput.value || pctInput.value === "0") pctInput.value = ""; // let them type 1–50
+      if (!pctInput.value || pctInput.value === "0") pctInput.value = "";
+      // Make sure the manager SEES no default on transfer when the panel opens
+      clearTransferRadios();
     }
     computePreview();
-  };
+  }
 
   document.addEventListener("DOMContentLoaded", function() {
-    // Initial state: nothing selected; hide take-options panel
-    toggleTakeOptions(false);
-
-    // Recompute preview whenever % changes or they toggle taking
+    // Initial state: nothing selected; keep panel hidden & inputs inert
+    const takeOptions = qs("#take-options");
     const pctInput = qs('#pct-input');
-    if (pctInput) {
-      pctInput.addEventListener('input', computePreview);
-      pctInput.addEventListener('change', computePreview);
+    if (takeOptions) takeOptions.style.display = "none";
+    if (pctInput) { pctInput.disabled = true; pctInput.required = false; pctInput.value = ""; }
+
+    // Wire listeners
+    const pct = qs('#pct-input');
+    if (pct) {
+      pct.addEventListener('input', computePreview);
+      pct.addEventListener('change', computePreview);
     }
     qsa('input[name="wants_to_take"]').forEach(el => {
       el.addEventListener('change', function() {
@@ -95,17 +106,17 @@
     const form = document.querySelector("form");
     if (form) {
       form.addEventListener("submit", function(e) {
-        const stealYes  = yesChecked();
-        const stealNo   = noChecked();
-        const stealPick = stealYes || stealNo;
+        const pickYes  = yesChecked();
+        const pickNo   = noChecked();
+        const picked   = pickYes || pickNo;
 
-        if (!stealPick) {
+        if (!picked) {
           e.preventDefault();
           alert("Please select whether you want to take from the worker's earnings (Yes or No).");
           return;
         }
 
-        if (stealYes) {
+        if (pickYes) {
           const pctInput = qs('#pct-input');
           const pctVal = pctInput ? parseInt(pctInput.value, 10) : NaN;
           if (!Number.isInteger(pctVal) || pctVal < 1 || pctVal > 50) {
@@ -122,8 +133,6 @@
         }
       });
     }
-
-    computePreview();
   });
 })();
 </script>
@@ -178,10 +187,10 @@
 <p>Do you want to take from the worker's earnings?</p>
 <div class="radio-container">
   <label>
-    <input type="radio" name="wants_to_take" value="True" onclick="toggleTakeOptions(true)"> Yes
+    <input type="radio" name="wants_to_take" value="True"> Yes
   </label>
   <label>
-    <input type="radio" name="wants_to_take" value="False" onclick="toggleTakeOptions(false)"> No
+    <input type="radio" name="wants_to_take" value="False"> No
   </label>
   {{ formfield_errors 'wants_to_take' }}
 </div>
@@ -195,7 +204,6 @@
 
   <div class="input-label-container">
     <label>Percentage Taken</label>
-    <!-- Leave value blank initially; set to "0" only when "No" is selected (hidden) -->
     <input id="pct-input" type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
   </div>
   {{ formfield_errors 'percentage_taken' }}
