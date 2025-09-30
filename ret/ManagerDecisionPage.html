@@ -3,88 +3,38 @@
 
 {% block scripts %}
 <script>
-    function toggleTakeOptions(show) {
-        const takeOptions = document.getElementById("take-options");
-        const wantsToPayTransferYes = document.querySelector('input[name="wants_to_pay_transfer"][value="True"]');
-        const wantsToPayTransferNo = document.querySelector('input[name="wants_to_pay_transfer"][value="False"]');
-        const percentageTaken = document.querySelector('input[name="percentage_taken"]');
+/**
+ * ManagerDecisionPage interactions
+ * - Pure client-side preview of the amount the manager would receive
+ * - Toggles the percentage/transfer section
+ * - Resets preview to 0 ECUs whenever "No" is selected
+ * - Enforces basic submit-time validation
+ */
+(function() {
+  // Server-provided worker points (safe default if missing)
+  const WORKER_POINTS = {{ worker_points_earned|default:0 }};
 
-        takeOptions.style.display = show ? "block" : "none";
-        percentageTaken.required = show;
-
-        if (!show) {
-            wantsToPayTransferNo.checked = true;
-            wantsToPayTransferYes.checked = false;
-            percentageTaken.value = "0";
-            percentageTaken.disabled = true;
-        } else {
-            wantsToPayTransferYes.checked = false;
-            wantsToPayTransferNo.checked = false;
-            percentageTaken.value = "";
-            percentageTaken.disabled = false;
-            percentageTaken.required = true;
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "True");
-
-        document.querySelector("form").addEventListener("submit", function(e) {
-            const wantsToTake = document.querySelector('input[name="wants_to_take"]:checked')?.value === "True";
-            const wantsToPayTransfer = document.querySelector('input[name="wants_to_pay_transfer"]:checked')?.value === "True";
-            const percentageTaken = document.querySelector('input[name="percentage_taken"]').value;
-
-            if (!document.querySelector('input[name="wants_to_take"]:checked')) {
-                e.preventDefault();
-                alert("Please select whether you want to take from the worker's earnings.");
-                return;
-            }
-
-            if (wantsToTake) {
-                if (!percentageTaken || percentageTaken <= 0 || percentageTaken > 50) {
-                    e.preventDefault();
-                    alert("Please enter a valid percentage between 1 and 50 if you want to take from the worker's earnings.");
-                    return;
-                }
-                if (!document.querySelector('input[name="wants_to_pay_transfer"]:checked')) {
-                    e.preventDefault();
-                    alert("Please select whether you want to pay a transfer to the authority.");
-                    return;
-                }
-            }
-
-            if (!wantsToTake && wantsToPayTransfer) {
-                e.preventDefault();
-                alert("You cannot offer a transfer if you are not taking from the worker. Please select 'No' for the transfer.");
-                document.querySelector('input[name="wants_to_pay_transfer"][value="False"]').checked = true;
-                document.querySelector('input[name="wants_to_pay_transfer"][value="True"]').checked = false;
-                return; // Ensure it stops here
-            }
-        });
-    });
-
-    (function() {
-  // Server-provided worker points and initial state (safe defaults)
-  const WORKER_POINTS = {{ worker_points_earned|default_if_none:0 }};
-  const pctInput = document.getElementById('pct-input');
-  const earningsDisplay = document.getElementById('earnings-display');
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
 
   function wantsToTakeChecked() {
-    const yes = document.querySelector('input[name="wants_to_take"][value="True"]');
+    const yes = qs('input[name="wants_to_take"][value="True"]');
     return !!(yes && yes.checked);
   }
 
-  function setTransferRadios(enabled) {
-    const yes = document.querySelector('input[name="wants_to_pay_transfer"][value="True"]');
-    const no  = document.querySelector('input[name="wants_to_pay_transfer"][value="False"]');
-    // We don't disable the radios to avoid dropping values on submit;
-    // instead we force-select "No" when not taking.
-    if (!enabled) { if (no) no.checked = true; if (yes) yes.checked = false; }
+  function setTransferRadiosForNotTaking() {
+    const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
+    const no  = qs('input[name="wants_to_pay_transfer"][value="False"]');
+    if (no) no.checked = true;
+    if (yes) yes.checked = false;
   }
 
   function computePreview() {
+    const earningsDisplay = qs('#earnings-display');
+    const pctInput = qs('#pct-input');
+    if (!earningsDisplay || !pctInput) return;
+
     if (!wantsToTakeChecked()) {
-      // Show explicit reset to 0, per your requirement
       earningsDisplay.textContent = `You will receive 0 ECUs (0% of ${WORKER_POINTS}).`;
       return;
     }
@@ -98,150 +48,203 @@
     }
   }
 
-  // Show/hide the “take” panel, enforce form invariants, and recompute preview
+  // Expose for onclick handlers in the radios
   window.toggleTakeOptions = function(show) {
-    const takeOptions = document.getElementById("take-options");
-    const pct = pctInput;
+    const takeOptions = qs("#take-options");
+    const pctInput    = qs('#pct-input');
+    if (!takeOptions || !pctInput) return;
 
     takeOptions.style.display = show ? "block" : "none";
-    pct.required = show;
+    pctInput.required = show;
 
     if (!show) {
-      // Force the backend-consistent values when "No": pct=0, transfer=No
-      pct.value = "0";
-      pct.disabled = true;
-      setTransferRadios(false);
+      // Force backend-consistent values when "No"
+      pctInput.value = "0";
+      pctInput.disabled = true;
+      setTransferRadiosForNotTaking();
     } else {
-      pct.disabled = false;
-      if (!pct.value || pct.value === "0") pct.value = ""; // let them type 1–50
+      pctInput.disabled = false;
+      if (!pctInput.value || pctInput.value === "0") {
+        // Let them type a valid 1–50
+        pctInput.value = "";
+      }
     }
     computePreview();
   };
 
-  // Wire listeners
   document.addEventListener("DOMContentLoaded", function() {
-    // Initialize visibility based on whichever radio is pre-checked by the template:
-    const initialShow = document.querySelector('input[name="wants_to_take"]:checked')?.value === "True";
+    // Initialize visibility based on whichever radio is pre-checked
+    const initialShow = qs('input[name="wants_to_take"]:checked')?.value === "True";
     toggleTakeOptions(!!initialShow);
 
     // Recompute preview whenever % changes or they toggle taking
-    pctInput.addEventListener('input', computePreview);
-    pctInput.addEventListener('change', computePreview);
-    document.querySelectorAll('input[name="wants_to_take"]').forEach(el => {
+    const pctInput = qs('#pct-input');
+    if (pctInput) {
+      pctInput.addEventListener('input', computePreview);
+      pctInput.addEventListener('change', computePreview);
+    }
+    qsa('input[name="wants_to_take"]').forEach(el => {
       el.addEventListener('change', function() {
         toggleTakeOptions(this.value === "True");
       });
     });
 
+    // Submit-time validation (keeps your existing logic)
+    const form = document.querySelector("form");
+    if (form) {
+      form.addEventListener("submit", function(e) {
+        const wantsToTake = qs('input[name="wants_to_take"]:checked')?.value === "True";
+        const wantsToPayTransfer = qs('input[name="wants_to_pay_transfer"]:checked')?.value === "True";
+        const pctInput = qs('#pct-input');
+        const pctVal = pctInput ? pctInput.value : "";
+
+        if (!qs('input[name="wants_to_take"]:checked')) {
+          e.preventDefault();
+          alert("Please select whether you want to take from the worker's earnings.");
+          return;
+        }
+
+        if (wantsToTake) {
+          const pct = parseInt(pctVal, 10);
+          if (!Number.isInteger(pct) || pct < 1 || pct > 50) {
+            e.preventDefault();
+            alert("Please enter a valid percentage between 1 and 50 if you want to take from the worker's earnings.");
+            return;
+          }
+          if (!qs('input[name="wants_to_pay_transfer"]:checked')) {
+            e.preventDefault();
+            alert("Please select whether you want to pay a transfer to the authority.");
+            return;
+          }
+        }
+
+        if (!wantsToTake && wantsToPayTransfer) {
+          e.preventDefault();
+          alert("You cannot offer a transfer if you are not taking from the worker. Please select 'No' for the transfer.");
+          const no = qs('input[name="wants_to_pay_transfer"][value="False"]');
+          const yes = qs('input[name="wants_to_pay_transfer"][value="True"]');
+          if (no) no.checked = true;
+          if (yes) yes.checked = false;
+          return;
+        }
+      });
+    }
+
     // One initial compute (covers pre-filled percentage)
     computePreview();
   });
-})()
+})();
 </script>
 
-
 <style>
-    input[type="number"] { width: 60px; text-align: center; }
-    .input-label-container { display: flex; align-items: center; justify-content: center; gap: 5px; }
-    .radio-container {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        gap: 40px;
-        margin: 10px auto;
-        width: fit-content;
-    }
-    .otree-radio-option {
-        margin: 0;
-        display: flex;
-        align-items: center;
-    }
-    .otree-radio-option label {
-        margin: 0 5px;
-    }
-    .otree-timer {
-        background-color: transparent !important;
-        color: black !important;
-        font-weight: normal;
-        border: none;
-        padding: 0;
-        text-align: right;
-    }
+  input[type="number"] { width: 60px; text-align: center; }
+  .input-label-container { display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .radio-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    margin: 10px auto;
+    width: fit-content;
+  }
+  .otree-radio-option {
+    margin: 0;
+    display: flex;
+    align-items: center;
+  }
+  .otree-radio-option label { margin: 0 5px; }
+  .otree-timer {
+    background-color: transparent !important;
+    color: black !important;
+    font-weight: normal;
+    border: none;
+    padding: 0;
+    text-align: right;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
-    <div>
-        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
-    </div>
-    <div style="text-align: center;">
-        <h1 style="font-weight: bold; font-size: 20px;">Decision Task</h1>
-    </div>
-    <div style="text-align: right;">
-        <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
-    </div>
+  <div>
+    <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+  </div>
+  <div style="text-align: center;">
+    <h1 style="font-weight: bold; font-size: 20px;">Decision Task</h1>
+  </div>
+  <div style="text-align: right;">
+    <p>Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+  </div>
 </div>
+
 <p>You earned <strong>{{ points_earned }}</strong> points in the addition task.</p>
 
-<p>You have been matched with a worker from one of 3 groups. The worker you are matched with solved <strong>{{ worker_solved_problems  }}</strong> problems correctly and earned <strong>{{ worker_points_earned }}</strong> ECUs in the addition task.</p>
+<p>
+  You have been matched with a worker from one of 3 groups.
+  The matched worker solved <strong>{{ worker_solved_problems }}</strong> problems correctly
+  and earned <strong>{{ worker_points_earned }}</strong> ECUs in the addition task.
+</p>
 
 <!-- Step 1: Do you want to take from the worker's earnings? -->
 <p>Do you want to take from the worker's earnings?</p>
 <div class="radio-container">
-    <!-- wants_to_take -->
-<label>
-  <input type="radio" name="wants_to_take" value="True"
-         {% if wants_to_take %}checked{% endif %}
-         onclick="toggleTakeOptions(true)"> Yes
-</label>
-<label>
-  <input type="radio" name="wants_to_take" value="False"
-         {% if wants_to_take is not None and not wants_to_take %}checked{% endif %}
-         onclick="toggleTakeOptions(false)"> No
-</label>
-{{ formfield_errors 'wants_to_take' }}
+  <label>
+    <input type="radio" name="wants_to_take" value="True"
+           {% if wants_to_take == True %}checked{% endif %}
+           onclick="toggleTakeOptions(true)"> Yes
+  </label>
+  <label>
+    <input type="radio" name="wants_to_take" value="False"
+           {% if wants_to_take == False %}checked{% endif %}
+           onclick="toggleTakeOptions(false)"> No
+  </label>
+  {{ formfield_errors 'wants_to_take' }}
 </div>
 
 <!-- Step 2: Percentage taken and transfer option (only visible if wants_to_take = Yes) -->
 <div id="take-options" style="display: none; margin-top: 20px; text-align: left;">
-    <p>If you would like to take a percentage of this worker's earnings from the addition task, please enter the amount below. You can only take a maximum of 50%.</p>
-    <div class="input-label-container">
-        <label>Percentage Taken</label>
-        <!-- percentage_taken -->
-<input id="pct-input" type="number" name="percentage_taken" min="1" max="50"
-       value="{{ percentage_taken|default_if_none:0 }}"
-       style="width: 60px; text-align: center;" /> <span>%</span>
-{{ formfield_errors 'percentage_taken' }}
+  <p>
+    If you would like to take a percentage of this worker's earnings from the addition task, please enter the amount below.
+    You can only take a maximum of 50%.
+  </p>
+
+  <div class="input-label-container">
+    <label>Percentage Taken</label>
+    <input id="pct-input" type="number" name="percentage_taken" min="1" max="50"
+           value="{{ percentage_taken|default:0 }}"
+           style="width: 60px; text-align: center;" /> <span>%</span>
+  </div>
+  {{ formfield_errors 'percentage_taken' }}
+
+  <p id="earnings-display" style="font-weight: bold; margin-top: 10px;"></p>
+
+  <p style="margin-top: 15px;">
+    If you have taken from a worker, the worker in your group may make a report in your group.
+    You can offer a transfer to the authority to intervene on your behalf.
+  </p>
+  <ul style="margin-top: 10px;">
+    <li>If the authority does not intervene on you, you face a {{ penalty_percentage }}% chance of losing your earnings for this round.</li>
+    <li>If the authority intervenes on your behalf, you face a {{ treatment_percentage }}% chance of losing your earnings for this period.</li>
+  </ul>
+
+  <div class="transfer-option" style="margin-top: 10px;">
+    <p>Do you want to pay a transfer of 60 ECUs to the authority?</p>
+    <div class="radio-container">
+      <label>
+        <input type="radio" name="wants_to_pay_transfer" value="True"
+               {% if wants_to_pay_transfer == True %}checked{% endif %}> Yes
+      </label>
+      <label>
+        <input type="radio" name="wants_to_pay_transfer" value="False"
+               {% if wants_to_pay_transfer == False %}checked{% endif %}> No
+      </label>
+      {{ formfield_errors 'wants_to_pay_transfer' }}
     </div>
-    <p id="earnings-display" style="font-weight: bold; color: green; margin-top: 10px;"></p>
-
-
-    <br>
-
-    <p>If you have taken from a worker, the worker in your group may make a report in your group. You can offer a transfer to the authority to intervene on your behalf.</p>
-    <ul style="margin-top: 10px;">
-        <li>If the authority does not intervene on you, you face a {{ penalty_percentage }}% chance of losing your earnings for this round.</li>
-        <li>If the authority intervenes on your behalf, you face a {{ treatment_percentage }}% chance of losing your earnings for this period.</li>
-    </ul>
-    <div class="transfer-option">
-        <p>Do you want to pay a transfer of 60 ECUs to the authority?</p>
-        <!-- wants_to_pay_transfer -->
-<label>
-  <input type="radio" name="wants_to_pay_transfer" value="True"
-         {% if wants_to_pay_transfer %}checked{% endif %}> Yes
-</label>
-<label>
-  <input type="radio" name="wants_to_pay_transfer" value="False"
-         {% if wants_to_pay_transfer is not None and not wants_to_pay_transfer %}checked{% endif %}> No
-</label>
-            {{ formfield_errors 'wants_to_pay_transfer' }}
-        </div>
-    </div>
+  </div>
 </div>
 
-<div style="text-align: right;">
-    {{ next_button }}
+<div style="text-align: right; margin-top: 20px;">
+  {{ next_button }}
 </div>
 {% endblock %}
