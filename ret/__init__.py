@@ -597,6 +597,8 @@ class ManagerDecisionPage(Page):
             'timeout_seconds': ManagerDecisionPage.get_timeout_seconds(player),
             'can_offer_transfer': group.wants_to_take,  # Only allow transfer if taking
             'wants_to_take': group.wants_to_take,  # Pass current state for toggle logic
+            'wants_to_pay_transfer': bool(group.field_maybe_none('wants_to_pay_transfer')),
+            'percentage_taken': group.field_maybe_none('percentage_taken') or 0,
             'points_earned': player.points_earned,
             'treatment_percentage': treatment_percentage,
             'penalty_percentage': C.PENALTY_PERCENTAGE,
@@ -608,9 +610,10 @@ class ManagerDecisionPage(Page):
     def before_next_page(player: Player, timeout_happened):
         group = player.group
         paired_worker_id = player.participant.vars.get('paired_worker_id')
-        paired_worker = get_player_by_participant_id(group, paired_worker_id,
-                                                     player.round_number) if paired_worker_id else None
-
+        paired_worker = get_player_by_participant_id(
+            group, paired_worker_id, player.round_number
+        ) if paired_worker_id else None
+        
         if timeout_happened:
             player.timeout_flag = True
             if not group.wants_to_take:
@@ -623,15 +626,15 @@ class ManagerDecisionPage(Page):
 
         # Ensure consistency: if the manager doesn't take, reset transfer and percentage
         if not group.wants_to_take:
-    group.wants_to_pay_transfer = False
-    group.percentage_taken = 0
-    player.manager_take_earnings = player.points_earned
-else:
-    if paired_worker and group.percentage_taken > 0:
-        amount_taken_preview = int((group.percentage_taken / 100) * paired_worker.points_earned)
-        player.manager_take_earnings = player.points_earned + amount_taken_preview
-    else:
-        player.manager_take_earnings = player.points_earned
+            group.wants_to_pay_transfer = False
+            group.percentage_taken = 0
+            player.manager_take_earnings = player.points_earned
+        else:
+            if paired_worker and group.percentage_taken > 0:
+                amount_taken_preview = int((group.percentage_taken / 100) * paired_worker.points_earned)
+                player.manager_take_earnings = player.points_earned + amount_taken_preview
+        else:
+                player.manager_take_earnings = player.points_earned
 
                     
 
