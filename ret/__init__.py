@@ -631,21 +631,25 @@ class ManagerDecisionPage(Page):
             player.manager_take_earnings = player.points_earned
             return
 
-        # Explicitly ensure percentage_taken is defined
-       if g.field_maybe_none('percentage_taken') is None:
+        # Ensure fields exist (defensive)
+        if g.field_maybe_none('wants_to_take') is None:
+            g.wants_to_take = False
+        if g.field_maybe_none('percentage_taken') is None:
             g.percentage_taken = 0
 
-        # Ensure consistency: if the manager doesn't take, reset transfer and percentage
+        # If no taking: reset transfer and theft %
         if not g.wants_to_take:
             g.wants_to_pay_transfer = False
             g.percentage_taken = 0
             player.manager_take_earnings = player.points_earned
+            return
+
+        # If taking: compute a *preview* of manager earnings
+        if paired_worker and g.percentage_taken > 0:
+            amount_taken_preview = int((g.percentage_taken / 100) * paired_worker.points_earned)
+            player.manager_take_earnings = player.points_earned + amount_taken_preview
         else:
-            if paired_worker and g.percentage_taken > 0:
-                amount_taken_preview = int((g.percentage_taken / 100) * paired_worker.points_earned)
-                player.manager_take_earnings = player.points_earned + amount_taken_preview
-            else:
-                player.manager_take_earnings = player.points_earned
+            player.manager_take_earnings = player.points_earned
 
                     
 
