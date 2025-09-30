@@ -63,26 +63,80 @@
         });
     });
 
-    function updateManagerEarnings() {
-        const workerPoints = {{ worker_points_earned }};
-        const percentageInput = document.querySelector('input[name="percentage_taken"]');
-        const earningsDisplay = document.getElementById('earnings-display');
+    (function() {
+  // Server-provided worker points and initial state (safe defaults)
+  const WORKER_POINTS = {{ worker_points_earned|default_if_none:0 }};
+  const pctInput = document.getElementById('pct-input');
+  const earningsDisplay = document.getElementById('earnings-display');
 
-        percentageInput.addEventListener('input', function() {
-            let percentage = parseInt(this.value);
-            if (percentage >= 1 && percentage <= 50) {
-                let managerEarnings = Math.round((percentage / 100) * workerPoints);
-                earningsDisplay.textContent = `You will receive ${managerEarnings} ECUs (${percentage}% of ${workerPoints}).`;
-            } else {
-                earningsDisplay.textContent = "";
-            }
-        });
+  function wantsToTakeChecked() {
+    const yes = document.querySelector('input[name="wants_to_take"][value="True"]');
+    return !!(yes && yes.checked);
+  }
+
+  function setTransferRadios(enabled) {
+    const yes = document.querySelector('input[name="wants_to_pay_transfer"][value="True"]');
+    const no  = document.querySelector('input[name="wants_to_pay_transfer"][value="False"]');
+    // We don't disable the radios to avoid dropping values on submit;
+    // instead we force-select "No" when not taking.
+    if (!enabled) { if (no) no.checked = true; if (yes) yes.checked = false; }
+  }
+
+  function computePreview() {
+    if (!wantsToTakeChecked()) {
+      // Show explicit reset to 0, per your requirement
+      earningsDisplay.textContent = `You will receive 0 ECUs (0% of ${WORKER_POINTS}).`;
+      return;
     }
+    const raw = pctInput.value;
+    const pct = parseInt(raw, 10);
+    if (Number.isInteger(pct) && pct >= 1 && pct <= 50) {
+      const amt = Math.round((pct / 100) * WORKER_POINTS);
+      earningsDisplay.textContent = `You will receive ${amt} ECUs (${pct}% of ${WORKER_POINTS}).`;
+    } else {
+      earningsDisplay.textContent = "";
+    }
+  }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        toggleTakeOptions(document.querySelector('input[name="wants_to_take"]:checked')?.value === "True");
-        updateManagerEarnings();
+  // Show/hide the “take” panel, enforce form invariants, and recompute preview
+  window.toggleTakeOptions = function(show) {
+    const takeOptions = document.getElementById("take-options");
+    const pct = pctInput;
+
+    takeOptions.style.display = show ? "block" : "none";
+    pct.required = show;
+
+    if (!show) {
+      // Force the backend-consistent values when "No": pct=0, transfer=No
+      pct.value = "0";
+      pct.disabled = true;
+      setTransferRadios(false);
+    } else {
+      pct.disabled = false;
+      if (!pct.value || pct.value === "0") pct.value = ""; // let them type 1–50
+    }
+    computePreview();
+  };
+
+  // Wire listeners
+  document.addEventListener("DOMContentLoaded", function() {
+    // Initialize visibility based on whichever radio is pre-checked by the template:
+    const initialShow = document.querySelector('input[name="wants_to_take"]:checked')?.value === "True";
+    toggleTakeOptions(!!initialShow);
+
+    // Recompute preview whenever % changes or they toggle taking
+    pctInput.addEventListener('input', computePreview);
+    pctInput.addEventListener('change', computePreview);
+    document.querySelectorAll('input[name="wants_to_take"]').forEach(el => {
+      el.addEventListener('change', function() {
+        toggleTakeOptions(this.value === "True");
+      });
     });
+
+    // One initial compute (covers pre-filled percentage)
+    computePreview();
+  });
+})()
 </script>
 
 
@@ -136,9 +190,18 @@
 <!-- Step 1: Do you want to take from the worker's earnings? -->
 <p>Do you want to take from the worker's earnings?</p>
 <div class="radio-container">
-    <label><input type="radio" name="wants_to_take" value="True" onclick="toggleTakeOptions(true)"> Yes</label>
-    <label><input type="radio" name="wants_to_take" value="False" onclick="toggleTakeOptions(false)"> No</label>
-    {{ formfield_errors 'wants_to_take' }}
+    <!-- wants_to_take -->
+<label>
+  <input type="radio" name="wants_to_take" value="True"
+         {% if wants_to_take %}checked{% endif %}
+         onclick="toggleTakeOptions(true)"> Yes
+</label>
+<label>
+  <input type="radio" name="wants_to_take" value="False"
+         {% if wants_to_take is not None and not wants_to_take %}checked{% endif %}
+         onclick="toggleTakeOptions(false)"> No
+</label>
+{{ formfield_errors 'wants_to_take' }}
 </div>
 
 <!-- Step 2: Percentage taken and transfer option (only visible if wants_to_take = Yes) -->
@@ -146,11 +209,15 @@
     <p>If you would like to take a percentage of this worker's earnings from the addition task, please enter the amount below. You can only take a maximum of 50%.</p>
     <div class="input-label-container">
         <label>Percentage Taken</label>
-        <input type="number" name="percentage_taken" min="1" max="50" style="width: 60px; text-align: center;" /> <span>%</span>
+        <!-- percentage_taken -->
+<input id="pct-input" type="number" name="percentage_taken" min="1" max="50"
+       value="{{ percentage_taken|default_if_none:0 }}"
+       style="width: 60px; text-align: center;" /> <span>%</span>
+{{ formfield_errors 'percentage_taken' }}
     </div>
     <p id="earnings-display" style="font-weight: bold; color: green; margin-top: 10px;"></p>
 
-    {{ formfield_errors 'percentage_taken' }}
+
     <br>
 
     <p>If you have taken from a worker, the worker in your group may make a report in your group. You can offer a transfer to the authority to intervene on your behalf.</p>
@@ -160,9 +227,15 @@
     </ul>
     <div class="transfer-option">
         <p>Do you want to pay a transfer of 60 ECUs to the authority?</p>
-        <div class="radio-container">
-            <label><input type="radio" name="wants_to_pay_transfer" value="True"> Yes</label>
-            <label><input type="radio" name="wants_to_pay_transfer" value="False"> No</label>
+        <!-- wants_to_pay_transfer -->
+<label>
+  <input type="radio" name="wants_to_pay_transfer" value="True"
+         {% if wants_to_pay_transfer %}checked{% endif %}> Yes
+</label>
+<label>
+  <input type="radio" name="wants_to_pay_transfer" value="False"
+         {% if wants_to_pay_transfer is not None and not wants_to_pay_transfer %}checked{% endif %}> No
+</label>
             {{ formfield_errors 'wants_to_pay_transfer' }}
         </div>
     </div>
