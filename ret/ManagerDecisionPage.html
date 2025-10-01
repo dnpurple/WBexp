@@ -13,7 +13,7 @@
  */
 (function () {
   // Safer binding of server values into JS (string → Number fallback)
-  const WORKER_POINTS = Number('{{ worker_points_earned|default:"0" }}') || 0;
+  const WORKER_POINTS = {{ worker_points_earned }};
 
   function qs(sel)  { return document.querySelector(sel); }
   function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
