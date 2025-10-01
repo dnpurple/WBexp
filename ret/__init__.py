@@ -249,7 +249,7 @@ class Group(BaseGroup):
     )
     report_decision = models.BooleanField(initial=False)
     wants_to_take = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label = 'Do you want to take from the worker’s earnings?')
-    wants_to_pay_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']],label ='',widget=widgets.RadioSelectHorizontal, blank=True, initial=None)
+    wants_to_pay_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']],label ='',widget=widgets.RadioSelectHorizontal, blank=True)
 
     bribe_offered_and_accepted = models.BooleanField(initial=False, doc="1 iff manager offered a transfer AND authority accepted it" )
 
