@@ -786,7 +786,7 @@ class AuthorityPage(Page):
         }
 class ResultsWaitPage(WaitPage):
    wait_for_all_groups = True 
-   after_all_players_arrive = set_payoffs_all
+   after_all_players_arrive = set_payoffs
    title_text = " "
 
    body_text = "Please wait while other participants are making their decisions."
