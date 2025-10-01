@@ -249,7 +249,7 @@ class Group(BaseGroup):
     )
     report_decision = models.BooleanField(initial=False)
     wants_to_take = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']], label = 'Do you want to take from the worker’s earnings?')
-    wants_to_pay_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']],label ='',widget=widgets.RadioSelectHorizontal, initial=False)
+    wants_to_pay_transfer = models.BooleanField(choices=[[True, 'Yes'], [False, 'No']],label ='',widget=widgets.RadioSelectHorizontal, blank=True, initial=None)
 
     bribe_offered_and_accepted = models.BooleanField(initial=False, doc="1 iff manager offered a transfer AND authority accepted it" )
 
@@ -568,21 +568,26 @@ class ManagerDecisionPage(Page):
         wants = values.get('wants_to_take', None)
         if wants is None:
             errors['wants_to_take'] = "Please select Yes or No."
-            return errors  # stop early; avoids cascading messages
+            return errors  # stop early to avoid cascading messages
     
-        if wants:
+        if wants:  # stealing = Yes
             pct = values.get('percentage_taken', None)
             if pct is None or not (1 <= pct <= 50):
                 errors['percentage_taken'] = "Enter a percentage between 1 and 50."
+    
             transfer_choice = values.get('wants_to_pay_transfer', None)
             if transfer_choice is None:
                 errors['wants_to_pay_transfer'] = "Please select Yes or No for the transfer."
-        else:
-            # If they chose No, they cannot offer a transfer
+    
+        else:  # stealing = No
+            # If they said “No” to stealing, they shouldn't be offering a transfer.
+            # (No required selection; backend will reset everything below.)
             if values.get('wants_to_pay_transfer') is True:
                 errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking."
+            # percentage_taken can be blank when not stealing (that’s already allowed)
     
         return errors or None
+
 
 
     @staticmethod
