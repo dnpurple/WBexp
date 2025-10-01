@@ -401,13 +401,12 @@ def get_addition(player: Player):
 def set_payoffs(group: Group):
     """
     Computes theft, reporting, transfers, and payoffs.
-    Critically: if a manager steals from a worker in another group, this function
-    ALSO recomputes that victim's totals immediately, so ordering across groups
-    no longer breaks the victim's deduction.
+    If a manager steals from a worker in another group, this also recomputes
+    that victim's totals immediately so cross-group ordering can't break anything.
     """
     import random
 
-    manager   = group.get_player_by_id(2)
+    manager = group.get_player_by_id(2)
     authority = group.get_player_by_id(3)
     worker_in_this_group = group.get_player_by_id(1)
 
@@ -419,71 +418,62 @@ def set_payoffs(group: Group):
             victim_worker = p
             break
     if victim_worker is None:
-        raise ValueError(f"Paired victim_worker with participant ID {victim_participant_id} not found!")
+        # Defensive fallback (should not happen once pairing is working)
+        victim_worker = worker_in_this_group
 
     # --- Theft calculation ---
     pct = group.field_maybe_none('percentage_taken') or 0
     wants_to_take = bool(group.field_maybe_none('wants_to_take'))
     amount_taken = int((pct / 100) * victim_worker.points_earned) if (wants_to_take and pct > 0) else 0
 
-    manager.amount_stolen   = amount_taken
-    victim_worker.amount_lost = amount_taken  # <- write the loss onto the *actual* victim
+    manager.amount_stolen = amount_taken
+    victim_worker.amount_lost = amount_taken  # write the loss onto the actual victim
 
     # --- Transfer / "bribe" mechanics ---
-    wants_to_pay_transfer    = bool(group.field_maybe_none('wants_to_pay_transfer'))
+    wants_to_pay_transfer = bool(group.field_maybe_none('wants_to_pay_transfer'))
     authority_accepted_trans = bool(group.field_maybe_none('authority_accepted_transfer'))
 
-    # 1st definition (general)
-    group.bribe_offered_and_accepted = wants_to_pay_transfer and authority_accepted_trans
-    # Require theft for it to count as an interference episode
+    # Count an interference episode only if there is theft AND a transfer that the authority accepts.
     group.bribe_offered_and_accepted = wants_to_take and wants_to_pay_transfer and authority_accepted_trans
 
     if group.bribe_offered_and_accepted:
-        group.transfer_amount        = C.TRANSFER_AMOUNT
-        authority.transfer_received  = C.TRANSFER_AMOUNT - C.INTERFERE_COST
-        manager.transfer_paid        = C.TRANSFER_AMOUNT
+        group.transfer_amount = C.TRANSFER_AMOUNT
+        authority.transfer_received = C.TRANSFER_AMOUNT - C.INTERFERE_COST
+        manager.transfer_paid = C.TRANSFER_AMOUNT
     else:
-        group.transfer_amount        = 0
-        authority.transfer_received  = 0
-        manager.transfer_paid        = 0
+        group.transfer_amount = 0
+        authority.transfer_received = 0
+        manager.transfer_paid = 0
 
     # --- Reporting logic (by the worker IN THIS GROUP) ---
     theft_occurred = amount_taken > 0
     is_victim = (worker_in_this_group == victim_worker)
 
-    # choose the relevant threshold field based on victim status
-    report_threshold = (group.field_maybe_none('min_report_percentage_self') if is_victim
-                        else group.field_maybe_none('min_report_percentage_other_worker'))
+    # pick the relevant threshold based on whether this group's worker is the victim
+    report_threshold = (
+        group.field_maybe_none('min_report_percentage_self') if is_victim
+        else group.field_maybe_none('min_report_percentage_other_worker')
+    )
     if report_threshold is None:
-        report_threshold = 51  # default = "never report" unless set
+        report_threshold = 51  # default = "never report"
 
-    worker_in_this_group.intended_to_report = (theft_occurred and (report_threshold <= pct < 51))
+    worker_in_this_group.intended_to_report = theft_occurred and (report_threshold <= pct < 51)
 
-    # Always clear + (re)set audit-trace fields this round
+    # clear audit trace fields each round
     group.punishment_draw = None
     group.punishment_cutoff = None
 
-    # We'll compute a *net* reporting delta using constants:
-    #   unsuccessful report:  -WORKER_REPORT_PENALTY
-    #   successful report:    -WORKER_REPORT_PENALTY + WORKER_REPORT_REWARD
+    def net_report_delta(success: bool) -> int:
+        """Unsuccessful report: -PENALTY; successful report: -PENALTY + REWARD."""
+        return (C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY) if success else (-C.WORKER_REPORT_PENALTY)
 
-def set_payoffs_all(subsession: Subsession):
-    """Called when wait_for_all_groups = True. Run group-level payoffs for every group."""
-    for g in subsession.get_groups():
-        set_payoffs(g)
-
-
-    
-def net_report_delta(success: bool) -> int:
-    if success:
-        return C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY
-    else:
-        return -C.WORKER_REPORT_PENALTY
-
-if worker_in_this_group.intended_to_report:
-    success_chance = (worker_in_this_group.treatment_probability
-                      if group.bribe_offered_and_accepted
-                      else C.REPORT_PENALTY_PROBABILITIES[0])
+    if worker_in_this_group.intended_to_report:
+        # If an interference bribe was accepted, use treatment_probability; otherwise use the baseline 0.97
+        success_chance = (
+            worker_in_this_group.treatment_probability
+            if group.bribe_offered_and_accepted
+            else C.REPORT_PENALTY_PROBABILITIES[0]
+        )
 
         group.punishment_cutoff = float(success_chance)
         draw = random.random()
@@ -494,7 +484,7 @@ if worker_in_this_group.intended_to_report:
         worker_in_this_group.report_successful = report_successful
         worker_in_this_group.report_reward = net_report_delta(report_successful)
 
-        # If report succeeds, manager loses earnings (as in your design)
+        # If report succeeds, manager loses earnings this round
         if report_successful:
             manager.total_earnings = 0
             manager.payoff = 0
@@ -506,8 +496,9 @@ if worker_in_this_group.intended_to_report:
     # --- Manager earnings (only if not wiped out by a successful report) ---
     if not worker_in_this_group.report_successful:
         manager.total_earnings = manager.points_earned + manager.amount_stolen - manager.transfer_paid
+        manager.payoff = manager.total_earnings
 
-    # --- Compute "this group's" worker totals using whatever loss they carry (0 if not a victim here) ---
+    # --- Worker totals for THIS group ---
     worker_in_this_group.total_earnings = (
         worker_in_this_group.points_earned
         + worker_in_this_group.report_reward
@@ -515,13 +506,11 @@ if worker_in_this_group.intended_to_report:
     )
     worker_in_this_group.payoff = worker_in_this_group.total_earnings
 
-    # --- Critically: also compute the ACTUAL victim's totals right now ---
-    # If the victim is a different person than this group's worker, compute theirs too,
-    # so cross-group theft immediately reduces their payoff regardless of call order.
+    # --- Also compute the ACTUAL victim's totals if they are in another group ---
     if victim_worker != worker_in_this_group:
         victim_worker.total_earnings = (
             victim_worker.points_earned
-            + (victim_worker.report_reward or 0)  # might be set by *their* group's case, keep it additive
+            + (victim_worker.report_reward or 0)  # might be set when *their* group runs
             - victim_worker.amount_lost
         )
         victim_worker.payoff = victim_worker.total_earnings
@@ -530,9 +519,20 @@ if worker_in_this_group.intended_to_report:
     authority.total_earnings = authority.points_earned + authority.transfer_received
     authority.payoff = authority.total_earnings
 
-    # --- For completeness: write effort_points mirrors (unchanged) ---
+    # --- Mirror effort_points (unchanged) ---
     for pl in group.get_players():
         pl.effort_points = pl.points_earned
+
+
+
+def set_payoffs_all(subsession: Subsession):
+    """Called when wait_for_all_groups = True. Run group-level payoffs for every group."""
+    for g in subsession.get_groups():
+        set_payoffs(g)
+
+
+    
+
 
 
 
