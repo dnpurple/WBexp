@@ -482,8 +482,8 @@ def net_report_delta(success: bool) -> int:
 
 if worker_in_this_group.intended_to_report:
     success_chance = (worker_in_this_group.treatment_probability
-                        if group.bribe_offered_and_accepted
-                        else C.REPORT_PENALTY_PROBABILITIES[0])
+                      if group.bribe_offered_and_accepted
+                      else C.REPORT_PENALTY_PROBABILITIES[0])
 
         group.punishment_cutoff = float(success_chance)
         draw = random.random()
