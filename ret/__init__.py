@@ -474,16 +474,16 @@ def set_payoffs_all(subsession: Subsession):
 
 
     
-    def net_report_delta(success: bool) -> int:
-        if success:
-            return C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY
-        else:
-            return -C.WORKER_REPORT_PENALTY
+def net_report_delta(success: bool) -> int:
+    if success:
+        return C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY
+    else:
+        return -C.WORKER_REPORT_PENALTY
 
-    if worker_in_this_group.intended_to_report:
-        success_chance = (worker_in_this_group.treatment_probability
-                          if group.bribe_offered_and_accepted
-                          else C.REPORT_PENALTY_PROBABILITIES[0])
+if worker_in_this_group.intended_to_report:
+    success_chance = (worker_in_this_group.treatment_probability
+                        if group.bribe_offered_and_accepted
+                        else C.REPORT_PENALTY_PROBABILITIES[0])
 
         group.punishment_cutoff = float(success_chance)
         draw = random.random()
