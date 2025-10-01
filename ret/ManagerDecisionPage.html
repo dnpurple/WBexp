@@ -13,7 +13,7 @@
 (function () {
   // DO NOT use Django/oTree filters like |default here; they’re not supported.
   // Number('') -> 0, Number('None') -> NaN, so `|| 0` gives us a safe fallback.
-  const WORKER_POINTS = Number('{{ worker_points_earned }}') || 0;
+  const WORKER_POINTS = {{ worker_points_earned }};
 
   function qs(sel)  { return document.querySelector(sel); }
   function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
