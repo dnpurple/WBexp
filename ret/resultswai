@@ -466,6 +466,14 @@ def set_payoffs(group: Group):
     # We'll compute a *net* reporting delta using constants:
     #   unsuccessful report:  -WORKER_REPORT_PENALTY
     #   successful report:    -WORKER_REPORT_PENALTY + WORKER_REPORT_REWARD
+
+    def set_payoffs_all(subsession: Subsession):
+        """Called when wait_for_all_groups = True. Run group-level payoffs for every group."""
+        for g in subsession.get_groups():
+            set_payoffs(g)
+
+
+    
     def net_report_delta(success: bool) -> int:
         if success:
             return C.WORKER_REPORT_REWARD - C.WORKER_REPORT_PENALTY
@@ -778,7 +786,7 @@ class AuthorityPage(Page):
         }
 class ResultsWaitPage(WaitPage):
    wait_for_all_groups = True 
-   after_all_players_arrive = set_payoffs
+   after_all_players_arrive = set_payoffs_all
    title_text = " "
 
    body_text = "Please wait while other participants are making their decisions."
