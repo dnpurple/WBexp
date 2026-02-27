@@ -41,6 +41,61 @@ class C(BaseConstants):
     SWITCH_ROUND = 10  # The round at which the treatment changes
 
 
+
+# ------------------------------------------------------------
+# EXOGENOUS BENCHMARKS (pooled prior-session data)
+# Benchmarks are in "out of 30" units, because that's how we ask beliefs.
+# Institution mapping is based on treatment_probability:
+#   Weak  = 0.3
+#   Strong= 0.7
+# ------------------------------------------------------------
+
+# ============================================================
+# Exogenous benchmarks for aggregate belief elicitation
+# (computed from pooled prior-session data; see Stata do-file)
+# Benchmarks are expressed as "out of 30" counts because that is
+# how we elicit beliefs from subjects.
+# ============================================================
+
+WEAK = 0
+STRONG = 1
+
+# Historical Pr(report | x, institution)
+PR_REPORT = {
+    WEAK:   {10: 0.3333333, 20: 0.0,      30: 0.0,      40: 0.4285714, 50: 0.7590361},
+    STRONG: {10: 0.7142857, 20: 0.375,    30: 0.5714286, 40: 1.0,      50: 0.9375},
+}
+
+BENCH_REPORT_OUT_OF_30 = {
+    inst: {x: 30 * pr for x, pr in PR_REPORT[inst].items()}
+    for inst in PR_REPORT
+}
+
+# Historical Pr(accept | offer, institution)
+PR_ACCEPT_GIVEN_OFFER = {
+    WEAK: 0.72,
+    STRONG: 0.675,
+}
+BENCH_ACCEPT_OUT_OF_30 = {inst: 30 * pr for inst, pr in PR_ACCEPT_GIVEN_OFFER.items()}
+
+# Scoring parameters (bounded quadratic loss on counts)
+BELIEF_A = 50  # max points per belief item (adjust if desired)
+BELIEF_C = BELIEF_A / (30 ** 2)  # approx zero bonus at max error (30)
+
+def inst_from_treatment_probability(p: float) -> int:
+    """Map treatment_probability to Weak/Strong label used in benchmark tables."""
+    if abs(p - 0.3) < 1e-6:
+        return WEAK
+    if abs(p - 0.7) < 1e-6:
+        return STRONG
+    return WEAK if p < 0.5 else STRONG
+
+def quad_bonus_count(guess: int, benchmark: float) -> int:
+    """Bounded quadratic loss scoring rule on 'out of 30' counts."""
+    err2 = (guess - benchmark) ** 2
+    bonus = BELIEF_A - BELIEF_C * err2
+    return max(0, int(round(bonus)))
+
 class Subsession(BaseSubsession):
     def creating_session(self):
         # set treatment each round
@@ -284,14 +339,18 @@ class Player(BasePlayer):
     #q4_num_errors = models.IntegerField(initial=0)
     effort_points = models.IntegerField()
 
-    total_earnings = models.IntegerField(initial=0)  # To track all earnings
+
+
+
+
+
     report_successful = models.BooleanField(initial=False, doc="Whether the worker's report succeeded")
     worker_reported = models.BooleanField(initial=False, doc="Whether the worker chose to report their manager")
     intended_to_report = models.BooleanField(initial=False, doc="Whether the worker intended to report their manager")
     report_would_have_succeeded = models.BooleanField(initial=False,
                                                       doc="Whether the intended report would have succeeded")
 
-    points_earned = models.IntegerField(initial=0)  # Earnings from the RET task
+
     transfer_earnings = models.IntegerField(initial=0)  # Earnings/deductions from transfers and reports
     #belief_earnings = models.IntegerField(initial=0)  # Earnings from belief elicitation
 
@@ -311,6 +370,27 @@ class Player(BasePlayer):
 
     manager_take_earnings = models.IntegerField(initial=0)
 
+    points_earned = models.IntegerField(initial=0)  # Earnings from the RET task
+    total_earnings = models.IntegerField(initial=0)  # To track all earnings
+
+    # -----------------------------
+    # Aggregate frequency beliefs (Rounds 10 and 20 only)
+    # Managers: out of 30 workers who report if theft is x ∈ {10,20,30,40,50}
+    # Workers: out of 30 authorities who accept a transfer if one is offered
+    # -----------------------------
+    belief_mgr_x_selected = models.IntegerField(blank=True)  # which theft level is paid for manager
+
+    belief_mgr_report_10 = models.IntegerField(min=0, max=30)
+    belief_mgr_report_20 = models.IntegerField(min=0, max=30)
+    belief_mgr_report_30 = models.IntegerField(min=0, max=30)
+    belief_mgr_report_40 = models.IntegerField(min=0, max=30)
+    belief_mgr_report_50 = models.IntegerField(min=0, max=30)
+
+    belief_wkr_accept_if_offered = models.IntegerField(min=0, max=30)
+
+    belief_bonus = models.IntegerField(initial=0)
+
+
     player_role = models.StringField(initial="Unknown")  # Add role explicitly
     unique_id = models.StringField()  # A unique identifier for each player
 
@@ -324,6 +404,9 @@ class Player(BasePlayer):
     external_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager paired with this worker")
     internal_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager in this player's fixed group")
     internal_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker in this player's fixed group")
+
+
+
 
     def set_treatment_probability(self):
         treatment_order = self.session.config.get("treatment_order", "low_to_high")
@@ -789,6 +872,99 @@ class AuthorityPage(Page):
             'treatment_percentage': treatment_percentage,
 
         }
+
+class AggregateBeliefs(Page):
+    """Aggregate belief elicitation (asked only at the end of each phase)."""
+    form_model = 'player'
+    timer_text = 'Time left:'
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return 60  # or whatever you want
+
+    @staticmethod
+    def is_displayed(player: Player):
+        # End of phase 1 (round 10) and end of phase 2 (round 20)
+        return player.round_number in [C.SWITCH_ROUND, C.NUM_ROUNDS] and player.get_role() != "Authority"
+
+    @staticmethod
+    def get_form_fields(player: Player):
+        if player.get_role() == "Manager":
+            return [
+                "belief_mgr_report_10",
+                "belief_mgr_report_20",
+                "belief_mgr_report_30",
+                "belief_mgr_report_40",
+                "belief_mgr_report_50",
+            ]
+        if player.get_role() == "Worker":
+            return ["belief_wkr_accept_if_offered"]
+        return []
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        inst = inst_from_treatment_probability(player.treatment_probability)
+        inst_label = "Weak Institutions" if inst == WEAK else "Strong Institutions"
+
+        selected_x = None  # IMPORTANT: define for Workers too
+
+        if player.get_role() == "Manager":
+            if player.field_maybe_none("belief_mgr_x_selected") is None:
+                player.belief_mgr_x_selected = random.choice([10, 20, 30, 40, 50])
+            selected_x = player.belief_mgr_x_selected
+
+        return dict(
+            inst_label=inst_label,
+            is_manager=(player.get_role() == "Manager"),
+            is_worker=(player.get_role() == "Worker"),
+            selected_x=selected_x,
+        )
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            player.belief_bonus = 0
+            return
+
+        inst = inst_from_treatment_probability(player.treatment_probability)
+        bonus = 0
+
+        if player.get_role() == "Manager":
+            # assign the paid theft level if not already set
+            if player.field_maybe_none("belief_mgr_x_selected") is None:
+                player.belief_mgr_x_selected = random.choice([10, 20, 30, 40, 50])
+
+            x = player.belief_mgr_x_selected
+
+            # get the corresponding belief
+            guess_map = {
+                10: player.field_maybe_none("belief_mgr_report_10"),
+                20: player.field_maybe_none("belief_mgr_report_20"),
+                30: player.field_maybe_none("belief_mgr_report_30"),
+                40: player.field_maybe_none("belief_mgr_report_40"),
+                50: player.field_maybe_none("belief_mgr_report_50"),
+            }
+            g = guess_map.get(x)
+
+            # if somehow missing (timeout etc.), pay zero
+            if g is None:
+                player.belief_bonus = 0
+                return
+
+            bench = BENCH_REPORT_OUT_OF_30[inst][x]
+            bonus = quad_bonus_count(g, bench)
+
+        elif player.get_role() == "Worker":
+            g = player.field_maybe_none("belief_wkr_accept_if_offered")
+            if g is None:
+                player.belief_bonus = 0
+                return
+            bench = BENCH_ACCEPT_OUT_OF_30[inst]
+            bonus = quad_bonus_count(g, bench)
+
+        player.belief_bonus = int(bonus)
+        player.total_earnings = int(player.total_earnings) + player.belief_bonus
+        player.payoff = player.total_earnings
+
 class ResultsWaitPage(WaitPage):
    wait_for_all_groups = True 
    after_all_players_arrive = set_payoffs_all
@@ -1161,7 +1337,7 @@ class TreatmentChangeAnnouncement(Page):
     @staticmethod
     def is_displayed(player: Player):
         # Show only before Round 3, after Round 2 completes
-        return player.round_number == C.SWITCH_ROUND - 1 and player.subsession.round_number == C.SWITCH_ROUND - 1
+        return player.round_number == C.SWITCH_ROUND
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -1196,4 +1372,9 @@ class DecisionResultsWait(WaitPage):
    # body_text = "Please wait until the experiment continues."
 
 
-page_sequence = [YourRoleIs, RET, RETResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+
+
+
+
+
+page_sequence = [YourRoleIs, RET, RETResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, AggregateBeliefs, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
