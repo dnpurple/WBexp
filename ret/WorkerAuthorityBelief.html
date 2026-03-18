@@ -1,0 +1,59 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <div>
+        <p>Your role is: <strong>{{ player.get_role }}</strong></p>
+    </div>
+    <div style="text-align: center;">
+        <h1 style="font-weight: bold; font-size: 20px; margin: 0;">Belief Task</h1>
+    </div>
+    <div style="text-align: right;">
+        <p style="margin: 0;">Round: {{ player.round_number }} of {{ C.NUM_ROUNDS }}</p>
+        <div class="otree-timer"></div>
+    </div>
+</div>
+
+<br>
+
+<p>
+If a report is made and the authority intervenes on behalf of the manager, the manager faces a <strong>{{ inst_label }}</strong> chance of losing their earnings for this round.
+</p>
+
+<p>
+Out of 100 authorities from previous sessions, how many do you think accepted a transfer <em>if one is offered</em>?
+</p>
+
+<p>
+The computer will automatically calculate your earnings. You only need to enter the number that best reflects your belief.
+</p>
+
+<div style="max-width: 400px; margin-bottom: 20px;">
+    {% formfield player.belief_wkr_accept_if_offered label="" %}
+</div>
+
+<br>
+
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
+
+<style>
+    .otree-timer {
+        background-color: transparent !important;
+        color: black !important;
+        font-weight: normal;
+        border: none;
+        padding: 0;
+        text-align: right;
+        margin: 0;
+    }
+
+    input[type="number"], input[type="text"] {
+        max-width: 200px;
+    }
+</style>
+
+{% endblock %}

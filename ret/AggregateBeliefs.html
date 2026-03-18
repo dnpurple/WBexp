@@ -19,34 +19,47 @@
 <br>
 
 <p>
-At the end of this phase you will answer belief questions.
-You are currently in: <strong>{{ inst_label }}</strong>.
+If a report is made and the authority intervenes on behalf of the manager, the manager faces a <strong>{{ inst_label }}</strong> chance of losing their earnings for this round.
 </p>
 
 {% if is_manager %}
-<p><strong>Manager belief:</strong>
-Out of 30 workers, how many do you think would report if the manager took the following percentages?
+
+<p>
+How many workers do you think reported if the manager took the following percentages?
+
 </p>
 
+<p>The computer will automatically calculate your earnings. You only need to enter the number that best reflects your belief</p>
+
 <table class="table">
-  <tr><th>Theft (%)</th><th>Your answer (0–30)</th></tr>
-  <tr><td>10%</td><td>{% formfield player.belief_mgr_report_10 label="" %}</td></tr>
-  <tr><td>20%</td><td>{% formfield player.belief_mgr_report_20 label="" %}</td></tr>
-  <tr><td>30%</td><td>{% formfield player.belief_mgr_report_30 label="" %}</td></tr>
-  <tr><td>40%</td><td>{% formfield player.belief_mgr_report_40 label="" %}</td></tr>
-  <tr><td>50%</td><td>{% formfield player.belief_mgr_report_50 label="" %}</td></tr>
+  <tr><th>Theft (%)</th><th>Your answer (0–100)</th></tr>
+  <tr><td>Out of 100 workers from previous sessions, how many do you think reported if the manager took <strong>10%</strong> </td><td>{% formfield player.belief_mgr_report_10 label="" %}</td></tr>
+  <tr><td>Out of 100 workers from previous sessions, how many do you think reported if the manager took <strong>20%</strong></td><td>{% formfield player.belief_mgr_report_20 label="" %}</td></tr>
+  <tr><td>Out of 100 workers from previous sessions, how many do you think reported if the manager took <strong>30%</strong></td><td>{% formfield player.belief_mgr_report_30 label="" %}</td></tr>
+  <tr><td>Out of 100 workers from previous sessions, how many do you think reported if the manager took <strong>40%</strong></td><td>{% formfield player.belief_mgr_report_40 label="" %}</td></tr>
+  <tr><td>Out of 100 workers from previous sessions, how many do you think reported if the manager took <strong>50%</strong></td><td>{% formfield player.belief_mgr_report_50 label="" %}</td></tr>
 </table>
 {% endif %}
 
 {% if is_worker %}
-<p><strong>Worker belief:</strong>
-Out of 30 authorities, how many do you think would accept a transfer <em>if one is offered</em>?
-</p>
 
-<div style="max-width: 400px;">
-    {% formfield player.belief_wkr_accept_if_offered label="" %}
-</div>
+
+<p>How many managers do you think offered a transfer after taking each of the following percentages?</p>
+<p>The computer will automatically calculate your earnings. You only need to enter the number that best reflects your belief</p>
+
+<table class="table">
+  <tr><th>Theft (%)</th><th>Your answer (0–100)</th></tr>
+  <tr><td>Out of 100 managers from previous sessions, how many do you think offered a transfer after taking <strong>10%</strong></td><td>{% formfield player.belief_wkr_offer_10 label="" %}</td></tr>
+  <tr><td>Out of 100 managers from previous sessions, how many do you think offered a transfer after taking <strong>20%</strong></td><td>{% formfield player.belief_wkr_offer_20 label="" %}</td></tr>
+  <tr><td>Out of 100 managers from previous sessions, how many do you think offered a transfer after taking <strong>30%</strong></td><td>{% formfield player.belief_wkr_offer_30 label="" %}</td></tr>
+  <tr><td>Out of 100 managers from previous sessions, how many do you think offered a transfer after taking <strong>40%</strong></td><td>{% formfield player.belief_wkr_offer_40 label="" %}</td></tr>
+  <tr><td>Out of 100 managers from previous sessions, how many do you think offered a transfer after taking <strong>50%</strong></td><td>{% formfield player.belief_wkr_offer_50 label="" %}</td></tr>
+</table>
+
+
+
 {% endif %}
+
 
 <br>
 

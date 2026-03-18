@@ -44,7 +44,7 @@ class C(BaseConstants):
 
 # ------------------------------------------------------------
 # EXOGENOUS BENCHMARKS (pooled prior-session data)
-# Benchmarks are in "out of 30" units, because that's how we ask beliefs.
+# Benchmarks are in "out of 100" units, because that's how we ask beliefs.
 # Institution mapping is based on treatment_probability:
 #   Weak  = 0.3
 #   Strong= 0.7
@@ -53,21 +53,21 @@ class C(BaseConstants):
 # ============================================================
 # Exogenous benchmarks for aggregate belief elicitation
 # (computed from pooled prior-session data; see Stata do-file)
-# Benchmarks are expressed as "out of 30" counts because that is
-# how we elicit beliefs from subjects.
-# ============================================================
+# Benchmarks are in "out of 100" units, because that is how beliefs are elicited.
+# Institution mapping is based on treatment_probability:
+#   Weak  = 0.3
+#   Strong= 0.7
 
 WEAK = 0
 STRONG = 1
 
-# Historical Pr(report | x, institution)
 PR_REPORT = {
-    WEAK:   {10: 0.3333333, 20: 0.0,      30: 0.0,      40: 0.4285714, 50: 0.7590361},
-    STRONG: {10: 0.7142857, 20: 0.375,    30: 0.5714286, 40: 1.0,      50: 0.9375},
+    WEAK:   {10: 0.3333333, 20: 0.0,       30: 0.0,       40: 0.4285714, 50: 0.7590361},
+    STRONG: {10: 0.7142857, 20: 0.375,     30: 0.5714286, 40: 1.0,       50: 0.9375},
 }
 
-BENCH_REPORT_OUT_OF_30 = {
-    inst: {x: 30 * pr for x, pr in PR_REPORT[inst].items()}
+BENCH_REPORT_OUT_OF_100 = {
+    inst: {x: 100 * pr for x, pr in PR_REPORT[inst].items()}
     for inst in PR_REPORT
 }
 
@@ -76,11 +76,26 @@ PR_ACCEPT_GIVEN_OFFER = {
     WEAK: 0.72,
     STRONG: 0.675,
 }
-BENCH_ACCEPT_OUT_OF_30 = {inst: 30 * pr for inst, pr in PR_ACCEPT_GIVEN_OFFER.items()}
+
+BENCH_ACCEPT_OUT_OF_100 = {
+    inst: 100 * pr for inst, pr in PR_ACCEPT_GIVEN_OFFER.items()
+}
+
+# Historical Pr(manager offers bribe | theft level, institution)
+# PLACEHOLDER values for now -- replace later with Stata estimates
+PR_BRIBE_OFFER_BY_X = {
+    WEAK:   {10: 0.20, 20: 0.30, 30: 0.40, 40: 0.50, 50: 0.60},
+    STRONG: {10: 0.10, 20: 0.20, 30: 0.30, 40: 0.40, 50: 0.50},
+}
+
+BENCH_BRIBE_OFFER_OUT_OF_100 = {
+    inst: {x: 100 * pr for x, pr in PR_BRIBE_OFFER_BY_X[inst].items()}
+    for inst in PR_BRIBE_OFFER_BY_X
+}
 
 # Scoring parameters (bounded quadratic loss on counts)
-BELIEF_A = 50  # max points per belief item (adjust if desired)
-BELIEF_C = BELIEF_A / (30 ** 2)  # approx zero bonus at max error (30)
+BELIEF_A = 55
+BELIEF_C = BELIEF_A / (100 ** 2)
 
 def inst_from_treatment_probability(p: float) -> int:
     """Map treatment_probability to Weak/Strong label used in benchmark tables."""
@@ -91,7 +106,7 @@ def inst_from_treatment_probability(p: float) -> int:
     return WEAK if p < 0.5 else STRONG
 
 def quad_bonus_count(guess: int, benchmark: float) -> int:
-    """Bounded quadratic loss scoring rule on 'out of 30' counts."""
+    """Bounded quadratic loss scoring rule on 'out of 100' counts."""
     err2 = (guess - benchmark) ** 2
     bonus = BELIEF_A - BELIEF_C * err2
     return max(0, int(round(bonus)))
@@ -375,18 +390,28 @@ class Player(BasePlayer):
 
     # -----------------------------
     # Aggregate frequency beliefs (Rounds 10 and 20 only)
-    # Managers: out of 30 workers who report if theft is x ∈ {10,20,30,40,50}
-    # Workers: out of 30 authorities who accept a transfer if one is offered
+    # Managers: out of 100 workers who report if theft is x ∈ {10,20,30,40,50}
+    # Workers:
+    #   (i) out of 100 authorities who accept a transfer if offered
+    #   (ii) out of 100 managers who would offer a transfer at theft levels x ∈ {10,20,30,40,50}
     # -----------------------------
     belief_mgr_x_selected = models.IntegerField(blank=True)  # which theft level is paid for manager
 
-    belief_mgr_report_10 = models.IntegerField(min=0, max=30)
-    belief_mgr_report_20 = models.IntegerField(min=0, max=30)
-    belief_mgr_report_30 = models.IntegerField(min=0, max=30)
-    belief_mgr_report_40 = models.IntegerField(min=0, max=30)
-    belief_mgr_report_50 = models.IntegerField(min=0, max=30)
+    belief_mgr_report_10 = models.IntegerField(min=0, max=100)
+    belief_mgr_report_20 = models.IntegerField(min=0, max=100)
+    belief_mgr_report_30 = models.IntegerField(min=0, max=100)
+    belief_mgr_report_40 = models.IntegerField(min=0, max=100)
+    belief_mgr_report_50 = models.IntegerField(min=0, max=100)
 
-    belief_wkr_accept_if_offered = models.IntegerField(min=0, max=30)
+    belief_wkr_accept_if_offered = models.IntegerField(min=0, max=100)
+
+    belief_wkr_offer_10 = models.IntegerField(min=0, max=100)
+    belief_wkr_offer_20 = models.IntegerField(min=0, max=100)
+    belief_wkr_offer_30 = models.IntegerField(min=0, max=100)
+    belief_wkr_offer_40 = models.IntegerField(min=0, max=100)
+    belief_wkr_offer_50 = models.IntegerField(min=0, max=100)
+
+    belief_wkr_item_selected = models.StringField(blank=True)
 
     belief_bonus = models.IntegerField(initial=0)
 
@@ -874,17 +899,15 @@ class AuthorityPage(Page):
         }
 
 class AggregateBeliefs(Page):
-    """Aggregate belief elicitation (asked only at the end of each phase)."""
     form_model = 'player'
     timer_text = 'Time left:'
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 60  # or whatever you want
+        return 60
 
     @staticmethod
     def is_displayed(player: Player):
-        # End of phase 1 (round 10) and end of phase 2 (round 20)
         return player.round_number in [C.SWITCH_ROUND, C.NUM_ROUNDS] and player.get_role() != "Authority"
 
     @staticmethod
@@ -898,16 +921,21 @@ class AggregateBeliefs(Page):
                 "belief_mgr_report_50",
             ]
         if player.get_role() == "Worker":
-            return ["belief_wkr_accept_if_offered"]
+            return [
+                "belief_wkr_offer_10",
+                "belief_wkr_offer_20",
+                "belief_wkr_offer_30",
+                "belief_wkr_offer_40",
+                "belief_wkr_offer_50",
+            ]
         return []
 
     @staticmethod
     def vars_for_template(player: Player):
         inst = inst_from_treatment_probability(player.treatment_probability)
-        inst_label = "Weak Institutions" if inst == WEAK else "Strong Institutions"
+        inst_label = "30%" if inst == WEAK else "70%"
 
-        selected_x = None  # IMPORTANT: define for Workers too
-
+        selected_x = None
         if player.get_role() == "Manager":
             if player.field_maybe_none("belief_mgr_x_selected") is None:
                 player.belief_mgr_x_selected = random.choice([10, 20, 30, 40, 50])
@@ -919,6 +947,7 @@ class AggregateBeliefs(Page):
             is_worker=(player.get_role() == "Worker"),
             selected_x=selected_x,
         )
+
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
         if timeout_happened:
@@ -926,16 +955,13 @@ class AggregateBeliefs(Page):
             return
 
         inst = inst_from_treatment_probability(player.treatment_probability)
-        bonus = 0
 
         if player.get_role() == "Manager":
-            # assign the paid theft level if not already set
             if player.field_maybe_none("belief_mgr_x_selected") is None:
                 player.belief_mgr_x_selected = random.choice([10, 20, 30, 40, 50])
 
             x = player.belief_mgr_x_selected
 
-            # get the corresponding belief
             guess_map = {
                 10: player.field_maybe_none("belief_mgr_report_10"),
                 20: player.field_maybe_none("belief_mgr_report_20"),
@@ -943,27 +969,90 @@ class AggregateBeliefs(Page):
                 40: player.field_maybe_none("belief_mgr_report_40"),
                 50: player.field_maybe_none("belief_mgr_report_50"),
             }
+
             g = guess_map.get(x)
 
-            # if somehow missing (timeout etc.), pay zero
             if g is None:
                 player.belief_bonus = 0
                 return
 
-            bench = BENCH_REPORT_OUT_OF_30[inst][x]
+            bench = BENCH_REPORT_OUT_OF_100[inst][x]
             bonus = quad_bonus_count(g, bench)
 
-        elif player.get_role() == "Worker":
-            g = player.field_maybe_none("belief_wkr_accept_if_offered")
-            if g is None:
-                player.belief_bonus = 0
-                return
-            bench = BENCH_ACCEPT_OUT_OF_30[inst]
-            bonus = quad_bonus_count(g, bench)
+            player.belief_bonus = int(bonus)
+            player.total_earnings = int(player.total_earnings) + player.belief_bonus
+            player.payoff = player.total_earnings
+
+
+class WorkerAuthorityBelief(Page):
+    form_model = 'player'
+    timer_text = 'Time left:'
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return 60
+
+    @staticmethod
+    def is_displayed(player: Player):
+        return player.round_number in [C.SWITCH_ROUND, C.NUM_ROUNDS] and player.get_role() == "Worker"
+
+    @staticmethod
+    def get_form_fields(player: Player):
+        return ["belief_wkr_accept_if_offered"]
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        inst = inst_from_treatment_probability(player.treatment_probability)
+        inst_label = "30%" if inst == WEAK else "70%"
+        return dict(inst_label=inst_label)
+
+    @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            player.belief_bonus = 0
+            return
+
+        inst = inst_from_treatment_probability(player.treatment_probability)
+
+        if player.field_maybe_none("belief_wkr_item_selected") is None:
+            player.belief_wkr_item_selected = random.choice([
+                "accept_if_offered",
+                "offer_10",
+                "offer_20",
+                "offer_30",
+                "offer_40",
+                "offer_50",
+            ])
+
+        selected_item = player.field_maybe_none("belief_wkr_item_selected")
+
+        guess_map = {
+            "accept_if_offered": player.field_maybe_none("belief_wkr_accept_if_offered"),
+            "offer_10": player.field_maybe_none("belief_wkr_offer_10"),
+            "offer_20": player.field_maybe_none("belief_wkr_offer_20"),
+            "offer_30": player.field_maybe_none("belief_wkr_offer_30"),
+            "offer_40": player.field_maybe_none("belief_wkr_offer_40"),
+            "offer_50": player.field_maybe_none("belief_wkr_offer_50"),
+        }
+
+        g = guess_map.get(selected_item)
+
+        if g is None:
+            player.belief_bonus = 0
+            return
+
+        if selected_item == "accept_if_offered":
+            bench = BENCH_ACCEPT_OUT_OF_100[inst]
+        else:
+            x = int(selected_item.split("_")[1])
+            bench = BENCH_BRIBE_OFFER_OUT_OF_100[inst][x]
+
+        bonus = quad_bonus_count(g, bench)
 
         player.belief_bonus = int(bonus)
         player.total_earnings = int(player.total_earnings) + player.belief_bonus
         player.payoff = player.total_earnings
+
 
 class ResultsWaitPage(WaitPage):
    wait_for_all_groups = True 
@@ -1377,4 +1466,4 @@ class DecisionResultsWait(WaitPage):
 
 
 
-page_sequence = [YourRoleIs, RET, RETResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, AggregateBeliefs, DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
+page_sequence = [YourRoleIs, RET, RETResults, BeforeDecisionsWaitPage, ManagerDecisionPage, WorkerPage, AuthorityPage, ResultsWaitPage, AggregateBeliefs, WorkerAuthorityBelief,DecisionResults, RoundResults,  TreatmentChangeAnnouncement, RandomRoundWaitPage, RandomRoundPayment ]
