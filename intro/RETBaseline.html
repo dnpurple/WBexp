@@ -70,46 +70,40 @@
 document.addEventListener('DOMContentLoaded', () => {
     const addendaSpan = document.querySelectorAll('#addition span'),
           btnSubmitAddition = document.getElementById('submit-addition'),
-          answerBox = document.getElementById('addition-answer'),  // Renamed for consistency
-          form = document.querySelector('#form') || answerBox.form;  // Fallback if no form
-
-    const numAttempts = document.querySelector('#num-attempts'),
+          answerBox = document.getElementById('addition-answer'),
+          numAttempts = document.querySelector('#num-attempts'),
           numSolved = document.querySelector('#num-solved');
 
-    // Function to submit the answer
-    function submitAnswer() {
-        if (answerBox.reportValidity()) {
-            liveSend({action: 'answer', answer: answerBox.value});
-            answerBox.value = '';  // Clear the input
-            answerBox.focus();     // Return focus to input
-        }
-    }
-
-    // Initial load
-    liveSend({action: 'load'});
-
-    // Receive and update data
     window.liveRecv = (data) => {
+        console.log('liveRecv got:', data);
         addendaSpan.forEach((s, i) => {
-            s.innerText = data.addition[i];  // Update addenda
+            s.innerText = data.addition[i];
         });
         numAttempts.innerHTML = data.num_attempts;
         numSolved.innerHTML = data.num_solved;
     };
 
-    // Submit on button click
+    function submitAnswer() {
+        if (answerBox.reportValidity()) {
+            liveSend({action: 'answer', answer: answerBox.value});
+            answerBox.value = '';
+            answerBox.focus();
+        }
+    }
+
     btnSubmitAddition.addEventListener('click', () => {
         submitAnswer();
-        btnSubmitAddition.blur();  // Remove focus from button
+        btnSubmitAddition.blur();
     });
 
-    // Submit on Enter key press
-    answerBox.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();  // Prevent form submission if in a form
+    answerBox.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
             submitAnswer();
         }
     });
+
+    liveSend({action: 'load'});
 });
 </script>
 {{ endblock }}

@@ -2,7 +2,6 @@
 
 {% block content %}
 
-
 <div style="text-align: center;">
     <h1>Final Earnings</h1>
     <p>Your role: <strong>{{ role }}</strong></p>
@@ -10,26 +9,54 @@
 
     {% if selected_round %}
         <p>Round <strong>{{ selected_round }}</strong> was selected for payment.</p>
-        <p>You earned <strong>{{ selected_round_earnings }} ECUs</strong> in that round.</p>
+
+        <!-- REMOVE THIS SECTION IF YOU CHANGE YOUR MIND:
+             This section shows a simple breakdown of selected-round earnings. -->
+        <div style="max-width: 600px; margin: 25px auto; text-align: left;">
+            <h3 style="text-align: center;">Breakdown of earnings for selected round</h3>
+
+            <table class="table table-bordered">
+                <tr>
+                    <td>Round earnings</td>
+                    <td>{{ round_earnings }}</td>
+                </tr>
+
+                {% if belief_applicable %}
+                <tr>
+                    <td>Belief-task bonus</td>
+                    <td>{{ belief_bonus }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td>Belief-task bonus</td>
+                    <td><em>Not applicable in this round</em></td>
+                </tr>
+                {% endif %}
+
+                <tr>
+                    <th>Total earnings for selected round</th>
+                    <th>{{ total_earnings }}</th>
+                </tr>
+            </table>
+
+            <p style="margin-top: 10px;">
+                Round earnings include your real-effort earnings, theft gains or losses, transfers, and any report reward or penalty from that round.
+            </p>
+        </div>
+        <!-- END REMOVE THIS SECTION IF YOU CHANGE YOUR MIND -->
+
     {% else %}
         <p>Payment round not yet determined.</p>
     {% endif %}
 </div>
 
+<div style="text-align: right;">
+    {{ next_button }}
+</div>
 
-    <!-- Right-Aligned Next Button -->
-    <div style="text-align: right;">
-        {{ next_button }}
-    </div>
-</form>
-
-{{ block styles }}
-    <style>
-        .input-group, input.form-control, select.form-control {
-            max-width: 150px;
-        }
-
-   .otree-timer {
+{% block styles %}
+<style>
+    .otree-timer {
         background-color: transparent !important;
         color: black !important;
         font-weight: normal;
@@ -37,8 +64,7 @@
         padding: 0;
         text-align: right;
     }
-    </style>
-
-{{ endblock }}
+</style>
+{% endblock %}
 
 {% endblock %}

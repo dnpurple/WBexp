@@ -71,47 +71,43 @@
 
 {{ block scripts }}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const addendaSpan = document.querySelectorAll('#addition span'),
-              btnSubmitAddition = document.getElementById('submit-addition'),
-              answerBox = document.getElementById('addition-answer'), // updated ID
-              numAttempts = document.querySelector('#num-attempts'),
-              numSolved = document.querySelector('#num-solved');
+document.addEventListener('DOMContentLoaded', () => {
+    const addendaSpan = document.querySelectorAll('#addition span'),
+          btnSubmitAddition = document.getElementById('submit-addition'),
+          answerBox = document.getElementById('addition-answer'),
+          numAttempts = document.querySelector('#num-attempts'),
+          numSolved = document.querySelector('#num-solved');
 
-        liveSend({action: 'load'});
+    window.liveRecv = (data) => {
+        console.log('liveRecv got:', data);
+        addendaSpan.forEach((s, i) => {
+            s.innerText = data.addition[i];
+        });
+        numAttempts.innerHTML = data.num_attempts;
+        numSolved.innerHTML = data.num_solved;
+    };
 
-        window.liveRecv = (data) => {
-            addendaSpan.forEach((s, i) => {
-                s.innerText = data.addition[i];
-            });
-
-            numAttempts.innerHTML = data.num_attempts;
-            numSolved.innerHTML = data.num_solved;
-        };
-
-        // Function to submit the answer
-        function submitAnswer() {
+    function submitAnswer() {
+        if (answerBox.reportValidity()) {
             liveSend({action: 'answer', answer: answerBox.value});
             answerBox.value = '';
             answerBox.focus();
         }
+    }
 
-        // Submit answer on button click
-        btnSubmitAddition.addEventListener('click', () => {
-            if (answerBox.reportValidity()) {
-                submitAnswer();
-            }
-        });
-
-        // Submit answer on "Enter" key press
-        answerBox.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                if (answerBox.reportValidity()) {
-                    submitAnswer();
-                }
-            }
-        });
+    btnSubmitAddition.addEventListener('click', () => {
+        submitAnswer();
+        btnSubmitAddition.blur();
     });
+
+    answerBox.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            submitAnswer();
+        }
+    });
+
+    liveSend({action: 'load'});
+});
 </script>
 {{ endblock }}

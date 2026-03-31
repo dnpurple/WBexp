@@ -62,11 +62,11 @@ def live_ret_addition(player: Player, data: dict) -> dict:
 
 
     if data['action'] == 'load':
-        addition = participant.vars.setdefault('addition', get_addition(player))
+        addition = participant.vars.setdefault('baseline_addition', get_addition(player))
 
 
         data = dict(
-            addition=participant.vars['addition'],
+            addition=participant.vars['baseline_addition'],
             num_attempts=player.num_attempts,
             num_solved=player.num_solved
         )
@@ -76,16 +76,16 @@ def live_ret_addition(player: Player, data: dict) -> dict:
 
         player.num_attempts += 1
 
-        if is_correct(participant.vars['addition'], int(data['answer'])):
+        if is_correct(participant.vars['baseline_addition'], int(data['answer'])):
             player.num_solved += 1
 
 
 
-        participant.vars['addition'] = get_addition(player)
+        participant.vars['baseline_addition'] = get_addition(player)
 
         # MODULE - 6 - Exercise 6 (RET)
         data = dict(
-            addition=participant.vars['addition'],
+            addition=participant.vars['baseline_addition'],
             num_attempts=player.num_attempts,
             num_solved=player.num_solved,
 

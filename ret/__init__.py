@@ -82,10 +82,9 @@ BENCH_ACCEPT_OUT_OF_100 = {
 }
 
 # Historical Pr(manager offers bribe | theft level, institution)
-# PLACEHOLDER values for now -- replace later with Stata estimates
 PR_BRIBE_OFFER_BY_X = {
-    WEAK:   {10: 0.20, 20: 0.30, 30: 0.40, 40: 0.50, 50: 0.60},
-    STRONG: {10: 0.10, 20: 0.20, 30: 0.30, 40: 0.40, 50: 0.50},
+    WEAK:   {10: 0.0,       20: 0.5714286, 30: 1.0,      40: 0.8571429, 50: 0.9638554},
+    STRONG: {10: 0.1428571, 20: 0.375,     30: 1.0,      40: 1.0,       50: 0.859375},
 }
 
 BENCH_BRIBE_OFFER_OUT_OF_100 = {
@@ -460,10 +459,10 @@ def live_ret_addition(player: Player, data):
 
     participant = player.participant
     if data['action'] == 'load':
-        if 'addition' not in participant.vars:
-            participant.vars['addition'] = get_addition(player)
+        if 'round_addition' not in participant.vars:
+            participant.vars['round_addition'] = get_addition(player)
         data = dict(
-                addition=participant.vars['addition'],
+                addition=participant.vars['round_addition'],
                 num_attempts=player.num_attempts,
                 num_solved=player.num_solved
             )
@@ -477,14 +476,14 @@ def live_ret_addition(player: Player, data):
 
          player.num_attempts += 1
 
-         if sum(participant.vars['addition']) == int(data['answer']):
+         if sum(participant.vars['round_addition']) == int(data['answer']):
               player.num_solved += 1
 
-         participant.vars['addition'] = get_addition(player)
+         participant.vars['round_addition'] = get_addition(player)
 
 
          data = dict(
-                addition=participant.vars['addition'],
+                addition=participant.vars['round_addition'],
                 num_attempts=player.num_attempts,
                 num_solved=player.num_solved
             )
@@ -649,17 +648,18 @@ def set_payoffs_all(subsession: Subsession):
 class RET(Page):
     form_model = 'player'
     timer_text = 'Time left:'
-    live_method = 'live_ret_addition'
+
+    @staticmethod
+    def live_method(player: Player, data):
+        return live_ret_addition(player, data)
+
     @staticmethod
     def vars_for_template(player: Player):
-        return dict(
-            addenda=[n for n in range(1, C.NUM_ADDENDA + 1)]
-        )
+        return dict(addenda=[n for n in range(1, C.NUM_ADDENDA + 1)])
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        session = player.session
-        return 600  # player.session.config['quiz_timeout_seconds']
+        return 60
 
 
 
@@ -1263,16 +1263,24 @@ class RandomRoundWaitPage(WaitPage):
         return player.round_number == C.NUM_ROUNDS  # Show only in the last round
 class RandomRoundPayment(Page):
     timer_text = 'Time left:'
+
     @staticmethod
     def is_displayed(player: Player):
-        return player.round_number == C.NUM_ROUNDS  # Show only in the last round
+        return player.round_number == C.NUM_ROUNDS
 
     @staticmethod
     def vars_for_template(player: Player):
         participant = player.participant
         selected_round = participant.vars.get('selected_round')
         selected_round_earnings = participant.vars.get('selected_round_earnings', 0)
-        timeout_seconds = RandomRoundPayment.get_timeout_seconds(player)  # Add timeout_seconds here
+
+        selected_player = player.in_round(selected_round) if selected_round else None
+
+        belief_bonus = selected_player.belief_bonus if selected_player else 0
+        total_earnings = selected_player.total_earnings if selected_player else 0
+        round_earnings = total_earnings - belief_bonus
+
+        belief_applicable = selected_round in [C.SWITCH_ROUND, C.NUM_ROUNDS]
 
         return {
             'role': player.get_role(),
@@ -1280,13 +1288,16 @@ class RandomRoundPayment(Page):
             'num_rounds': C.NUM_ROUNDS,
             'selected_round': selected_round,
             'selected_round_earnings': selected_round_earnings,
-            'timeout_seconds': RandomRoundPayment.get_timeout_seconds(player),  # Pass timeout_seconds to the template
+            'timeout_seconds': RandomRoundPayment.get_timeout_seconds(player),
 
+            'round_earnings': round_earnings,
+            'belief_bonus': belief_bonus,
+            'total_earnings': total_earnings,
+            'belief_applicable': belief_applicable,
         }
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        # Optional timeout if needed
         return 20
 
 
