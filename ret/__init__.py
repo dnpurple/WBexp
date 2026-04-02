@@ -115,6 +115,9 @@ class Subsession(BaseSubsession):
         # set treatment each round
         for p in self.get_players():
             p.set_treatment_probability()
+            p.unique_id = p.participant.code
+
+
     
         if self.round_number == 1:
             # build the round-1 groups and set round-1 fields
@@ -172,6 +175,7 @@ class Subsession(BaseSubsession):
         players = self.get_players()
         managers = [p for p in players if p.get_role() == 'Manager']
         workers  = [p for p in players if p.get_role() == 'Worker']
+
     
         if len(managers) != len(workers):
             raise ValueError("Mismatch in number of managers and workers!")
@@ -186,6 +190,8 @@ class Subsession(BaseSubsession):
             p.pair_id = ''
             p.external_worker_code = ''
             p.external_manager_code = ''
+            p.matched_worker_code = ''
+            p.matched_manager_code = ''
             p.in_group_match = False
     
         # Make new pairs
@@ -200,14 +206,20 @@ class Subsession(BaseSubsession):
             g.manager_id = manager.participant.id
     
             # Stable pair_id built from the 2 participant codes (same pair => same id across rounds)
-            sorted_codes = sorted([manager.participant.code, worker.participant.code])
-            pair_id_str = '-'.join(sorted_codes)
+            pair_id_str = f"M_{manager.participant.code}__W_{worker.participant.code}"
             manager.pair_id = pair_id_str
             worker.pair_id = pair_id_str
-    
+
             # Round-specific “external” partner codes
             manager.external_worker_code = worker.participant.code
             worker.external_manager_code = manager.participant.code
+
+            # Clean, symmetric match columns for export/analysis
+            manager.matched_worker_code = worker.participant.code
+            manager.matched_manager_code = manager.participant.code
+
+            worker.matched_worker_code = worker.participant.code
+            worker.matched_manager_code = manager.participant.code
     
             # **Robust** in-group flag: are these 2 people in the same fixed oTree group this round?
             same_group = (manager.group == worker.group)
@@ -282,14 +294,13 @@ class Subsession(BaseSubsession):
         but don't overwrite with empty strings.
         """
         for p in self.get_players():
-            iw = p.participant.vars.get('internal_worker_code')
-            if iw:
-                p.internal_worker_code = iw
-            im = p.participant.vars.get('internal_manager_code')
-            if im:
-                p.internal_manager_code = im
-            # keep your stable per-participant id if useful in analysis
             p.unique_id = p.participant.code
+
+            iw = p.participant.vars.get('internal_worker_code', '')
+            im = p.participant.vars.get('internal_manager_code', '')
+
+            p.internal_worker_code = iw
+            p.internal_manager_code = im
 
 
 
@@ -416,7 +427,7 @@ class Player(BasePlayer):
 
 
     player_role = models.StringField(initial="Unknown")  # Add role explicitly
-    unique_id = models.StringField()  # A unique identifier for each player
+    unique_id = models.StringField(blank=True, initial='')  # A unique identifier for each player
 
     in_group_match = models.BooleanField(
         initial=False,
@@ -426,6 +437,8 @@ class Player(BasePlayer):
     pair_id = models.StringField(blank=True, initial='')  # Unique ID for the matched pair per round
     external_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker paired with this manager")
     external_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager paired with this worker")
+    matched_worker_code = models.StringField(blank=True, initial='')
+    matched_manager_code = models.StringField(blank=True, initial='')
     internal_manager_code = models.StringField(blank=True, initial='', doc="Participant code of the manager in this player's fixed group")
     internal_worker_code = models.StringField(blank=True, initial='', doc="Participant code of the worker in this player's fixed group")
 
@@ -638,7 +651,7 @@ def set_payoffs_all(subsession: Subsession):
         set_payoffs(g)
 
 
-    
+
 
 
 
@@ -668,32 +681,32 @@ class ManagerDecisionPage(Page):
     form_fields = ['wants_to_take', 'percentage_taken', 'wants_to_pay_transfer']
     timer_text = 'Time left:'
 
-    
+
     @staticmethod
     def error_message(player, values):
         errors = {}
-    
+
         wants = values.get('wants_to_take', None)
         if wants is None:
             errors['wants_to_take'] = "Please select Yes or No."
             return errors  # stop early to avoid cascading messages
-    
+
         if wants:  # stealing = Yes
             pct = values.get('percentage_taken', None)
             if pct is None or not (1 <= pct <= 50):
                 errors['percentage_taken'] = "Enter a percentage between 1 and 50."
-    
+
             transfer_choice = values.get('wants_to_pay_transfer', None)
             if transfer_choice is None:
                 errors['wants_to_pay_transfer'] = "Please select Yes or No for the transfer."
-    
+
         else:  # stealing = No
             # If they said “No” to stealing, they shouldn't be offering a transfer.
             # (No required selection; backend will reset everything below.)
             if values.get('wants_to_pay_transfer') is True:
                 errors['wants_to_pay_transfer'] = "You cannot offer a transfer if you're not taking."
             # percentage_taken can be blank when not stealing (that’s already allowed)
-    
+
         return errors or None
 
 
@@ -742,7 +755,7 @@ class ManagerDecisionPage(Page):
         paired_worker = get_player_by_participant_id(
             g, paired_worker_id, player.round_number
         ) if paired_worker_id else None
-        
+
         if timeout_happened:
             player.timeout_flag = True
             # Backend defaults on timeout
@@ -772,7 +785,7 @@ class ManagerDecisionPage(Page):
         else:
             player.manager_take_earnings = player.points_earned
 
-                    
+
 
 
     @staticmethod
@@ -825,8 +838,8 @@ class WorkerPage(Page):
 
         treatment_percentage = int(float(player.treatment_probability) * 100) if player.treatment_probability is not None else 0
         print(f"Player {player.id_in_group}: treatment_probability = {player.treatment_probability}, type = {type(player.treatment_probability)}")
-        
-        
+
+
         return {
             'timeout_seconds': WorkerPage.get_timeout_seconds(player),
             'timeout_seconds_ms': WorkerPage.get_timeout_seconds(player) * 1000,  # Pass milliseconds for JavaScript
@@ -1055,7 +1068,7 @@ class WorkerAuthorityBelief(Page):
 
 
 class ResultsWaitPage(WaitPage):
-   wait_for_all_groups = True 
+   wait_for_all_groups = True
    after_all_players_arrive = set_payoffs_all
    title_text = " "
 
@@ -1113,7 +1126,7 @@ class DecisionResults(Page):
 
 
         # Get the victim worker for display purposes (not reporting)
-        
+
         victim_participant_id = manager.participant.vars.get('paired_worker_id')
         victim_worker = None
         for p in player.subsession.get_players():
