@@ -713,7 +713,7 @@ class ManagerDecisionPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
+        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
     @staticmethod
     def vars_for_template(player: Player):
         group = player.group
@@ -802,7 +802,7 @@ class WorkerPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
+        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
 
 
     @staticmethod
@@ -875,7 +875,7 @@ class AuthorityPage(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 600 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 600
+        return 180 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 90
 
     @staticmethod
     def is_displayed(player: Player):
@@ -917,7 +917,7 @@ class AggregateBeliefs(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 60
+        return 90
 
     @staticmethod
     def is_displayed(player: Player):
@@ -1003,7 +1003,7 @@ class WorkerAuthorityBelief(Page):
 
     @staticmethod
     def get_timeout_seconds(player: Player):
-        return 60
+        return 90
 
     @staticmethod
     def is_displayed(player: Player):
@@ -1079,9 +1079,7 @@ class DecisionResults(Page):
     form_model = 'group'
     timer_text = 'Time left:'
 
-    #@staticmethod
-    #def get_timeout_seconds(player: Player):
-     #   return 120  # Set your desired timer duration
+    #40 and 20 for timer
     @staticmethod
     def get_timeout_seconds(player: Player):
         return 40 if player.round_number == 1 or player.round_number == C.SWITCH_ROUND else 20
